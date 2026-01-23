@@ -30,6 +30,48 @@
 - [ ] Configuration schema validation
 - [ ] Default config generation on first run
 
+### Versioning & Data Durability
+- [ ] Application version numbering (semantic versioning)
+- [ ] Schema version tracking in saved data
+- [ ] Data migration framework for breaking changes
+- [ ] Migration script examples and documentation
+
+---
+
+## Phase 1.5: Connection Resilience Analysis & Critical Risk Mitigation (Priority: HIGH)
+### Risk Analysis
+- [ ] Analyze connection failure scenarios
+- [ ] Identify critical vs. important vs. nice-to-have fixes
+- [ ] Document failure modes and recovery strategies
+
+### Critical Implementations
+- [ ] Graceful reconnection during active session (don't lose data)
+- [ ] Session buffer storage to disk periodically (every 1-2 minutes)
+- [ ] Connection loss detection
+- [ ] Graceful pause on disconnection
+- [ ] Resume session capability after reconnection
+
+### Testing
+- [ ] Unit tests for reconnection logic
+- [ ] Simulate connection loss scenarios
+- [ ] Verify data integrity after reconnection
+
+---
+
+## Phase 1.6: Documentation (Priority: HIGH)
+### User Documentation
+- [ ] Setup guide (installation, first connection)
+- [ ] How to record your first session
+- [ ] Troubleshooting guide
+- [ ] Configuration options explained
+
+### Developer Documentation
+- [ ] Architecture overview
+- [ ] Data model documentation
+- [ ] Schema versioning guide
+- [ ] Data migration guide
+- [ ] Contributing guidelines
+
 ---
 
 ## Phase 2: Minimal Viable UI (Priority: High)
@@ -42,6 +84,11 @@
   - Total distance rowed
 - [ ] Session summary on finish
 - [ ] Clean separation between UI and business logic
+
+### Offline Mode
+- [ ] Application can start without device connection
+- [ ] UI gracefully handles "device not connected" state
+- [ ] (Historical session loading deferred to Phase 7)
 
 ---
 
