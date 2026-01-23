@@ -3,7 +3,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import pandas as pd
-from rowing_data import RowingDataPoint
+from .rowing_data import RowingDataPoint
 
 
 class RowingAnalyzer:
@@ -124,7 +124,7 @@ class RowingAnalyzer:
 
 # Example usage
 if __name__ == "__main__":
-    from rowing_data import RowingSession
+    from .rowing_data import RowingSession
     from datetime import datetime
     
     # Create sample live data

@@ -1,7 +1,7 @@
 import serial
 import time
-from rowing_data import RowingSession, RowingDataPoint
-from rowing_analyzer import RowingAnalyzer
+from .rowing_data import RowingSession, RowingDataPoint
+from .rowing_analyzer import RowingAnalyzer
 
 PORT = "/dev/ttyUSB0"   # Linux/macOS example
 # PORT = "COM3"        # Windows example
