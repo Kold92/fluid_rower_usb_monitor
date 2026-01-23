@@ -1,0 +1,200 @@
+import serial
+import time
+from rowing_data import RowingSession, RowingDataPoint
+from rowing_analyzer import RowingAnalyzer
+
+PORT = "/dev/ttyUSB0"   # Linux/macOS example
+# PORT = "COM3"        # Windows example
+BAUDRATE = 9600
+TIMEOUT = 2            # seconds - used for blocking read
+
+
+def setup_serial(port, baudrate, timeout):
+    ser = serial.Serial(
+        port=port,
+        baudrate=baudrate,
+        timeout=timeout
+    )
+        
+    print(f"Connected to {ser.portstr}")
+    return ser
+
+def get_serial_response(ser: serial.Serial, timeout: float) -> str | None:
+    """Reads from serial or times out after 'timeout' seconds."""
+    start_time = time.time()
+
+    while True:
+        if ser.in_waiting:
+            return ser.readline().decode('utf-8', errors='ignore').strip()
+    
+        if (time.time() - start_time) > timeout:
+            return None
+        time.sleep(0.1)
+
+def connect_to_device(ser: serial.Serial) -> bool:
+    """
+    Sends 'C' to connect to the device and waits for 'C' response.
+    Returns True on successful connection, False on timeout.
+    """
+    max_attempts = 20
+    for attempt in range(max_attempts):
+        ser.write(b"C\n")
+        print(f"[Attempt {attempt + 1}/{max_attempts}] Sent connection request 'C'")
+        response = get_serial_response(ser, timeout=2)
+
+        if response.startswith("C"):
+            print(f"✓ Successfully connected to the device v{response[1:]}!")
+            return True
+        else:
+            print(f"  Got: {repr(response)}, retrying...")
+            time.sleep(0.1)
+    
+    print("✗ Failed to connect to device after max attempts")
+    return False
+
+
+def reset_session(ser: serial.Serial) -> bool:
+    """Sends reset command to the device."""
+    ser.write(b"R\n")
+    time.sleep(0.5)
+    while True:
+        response = get_serial_response(ser, timeout=2)
+        if response.startswith("R"):
+            return True
+        if response is None:
+            return False
+        
+def decode_rowing_data(data: str) -> dict:
+    """
+    Decode rowing data in format: A5 00001 00010 002 19 022 129 0744 09
+    
+    Format (fixed-width, no spaces):
+    - Position 0-1: A5 (device type, A prefix + digit)
+    - Position 2-6: Row duration (secs)
+    - Position 7-11: Row distance (meters)
+    - Position 12-12: Unused
+    - Position 13-14: 500m time (minutes)
+    - Position 15-16: 500m time (seconds)
+    - Position 17-19: Strokes per minute
+    - Position 20-22: Power (watts)
+    - Position 23-26: Calories per hour
+    - Position 27-28: Resistance level
+    """
+    try:
+        time_500m_minutes = int(data[13:15])
+        time_500m_seconds = int(data[15:17])
+        time_500m_total_secs = (time_500m_minutes * 60) + time_500m_seconds
+        
+        result = {
+            "device_type": int(data[1]) if data[0] == 'A' else None,
+            "row_duration_secs": int(data[2:7]),
+            "row_distance_m": int(data[7:12]),
+            "time_500m_secs": time_500m_total_secs,
+            "strokes_per_min": int(data[17:20]),
+            "power_watts": int(data[20:23]),
+            "calories_per_hour": int(data[23:27]),
+            "resistance_level": int(data[27:29]),
+        }
+        return result
+    except (IndexError, ValueError) as e:
+        print(f"Error decoding rowing data '{data}': {e}")
+        return None
+
+
+def rowing_session(ser: serial.Serial):
+    """
+    Starts a new rowing session.
+    Read rowing data, decode, store per-stroke data points, and save session.
+    """
+    
+    if not reset_session(ser):
+        print("Failed to reset session.")
+        return
+    
+    session = RowingSession()
+    print(f"New rowing session started. Saving to: {session.filename}")
+    print()
+    
+    previous_data = None
+    total_distance = 0
+    total_duration = 0
+
+    try:
+        while True:
+            response = get_serial_response(ser, timeout=5)
+            
+            if response and response.startswith("A"):
+                decoded = decode_rowing_data(response)
+                if decoded:
+                    # Calculate per-stroke deltas
+                    if previous_data:
+                        stroke_distance = decoded['row_distance_m'] - previous_data['row_distance_m']
+                        stroke_duration = decoded['row_duration_secs'] - previous_data['row_duration_secs']
+                        
+                        total_distance += stroke_distance
+                        total_duration += stroke_duration
+                        
+                        # Create data point with per-stroke values
+                        point = RowingDataPoint(
+                            stroke_distance_m=stroke_distance,
+                            stroke_duration_secs=stroke_duration,
+                            time_500m_secs=decoded['time_500m_secs'],
+                            strokes_per_min=decoded['strokes_per_min'],
+                            power_watts=decoded['power_watts'],
+                            calories_per_hour=decoded['calories_per_hour'],
+                            resistance_level=decoded['resistance_level'],
+                        )
+                        session.add_point(point)
+                        
+                        # Display live stats
+                        stats = RowingAnalyzer.get_live_stats(session.data_points)
+                        print(f"Distance: {total_distance}m | Duration: {total_duration}s | "
+                              f"Avg 500m: {stats['mean_time_500m_secs']:.1f}s | "
+                              f"Avg Power: {stats['mean_power_watts']:.0f}W | "
+                              f"SPM: {decoded['strokes_per_min']}")
+                    
+                    previous_data = decoded
+
+            elif response:
+                print(f"Received: {response}")
+                
+    except KeyboardInterrupt:
+        print("\n\nSession ended by user.")
+    finally:
+        # Save session and show final stats
+        if session.data_points:
+            session.save()
+            stats = RowingAnalyzer.get_live_stats(session.data_points)
+            print("\n=== Session Summary ===")
+            print(f"Total strokes: {stats['num_strokes']}")
+            print(f"Total distance: {stats['total_distance_m']:.1f}m")
+            print(f"Total duration: {stats['total_duration_secs']:.0f}s")
+            print(f"Mean 500m pace: {stats['mean_time_500m_secs']:.1f}s")
+            print(f"Mean power: {stats['mean_power_watts']:.0f}W")
+            print(f"Total calories: {stats['total_calories']:.0f}/hr")
+            print(f"Session saved to: {session.filename}")
+        else:
+            print("No data recorded in session.")
+        
+
+def main():
+    try:
+        ser = setup_serial(PORT, BAUDRATE, TIMEOUT)
+        
+        if not connect_to_device(ser):
+            print("Could not connect to device. Exiting.")
+            return
+        
+        rowing_session(ser)
+       
+    except serial.SerialException as e:
+        print(f"Serial error: {e}")
+    except KeyboardInterrupt:
+        print("\nExiting...")
+    finally:
+        if 'ser' in locals() and ser.is_open:
+            ser.close()
+            print("Serial port closed")
+
+if __name__ == "__main__":
+    main()
