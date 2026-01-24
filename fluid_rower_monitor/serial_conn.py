@@ -42,7 +42,7 @@ def connect_to_device(ser: serial.Serial) -> bool:
         print(f"[Attempt {attempt + 1}/{max_attempts}] Sent connection request 'C'")
         response = get_serial_response(ser, timeout=2)
 
-        if response.startswith("C"):
+        if response and response.startswith("C"):
             print(f"✓ Successfully connected to the device v{response[1:]}!")
             return True
         else:
@@ -59,7 +59,7 @@ def reset_session(ser: serial.Serial) -> bool:
     time.sleep(0.5)
     while True:
         response = get_serial_response(ser, timeout=2)
-        if response.startswith("R"):
+        if response and response.startswith("R"):
             return True
         if response is None:
             return False
