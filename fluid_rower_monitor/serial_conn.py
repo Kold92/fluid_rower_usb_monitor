@@ -1,6 +1,6 @@
 import serial
 import time
-from .rowing_data import RowingSession, RowingDataPoint
+from .rowing_data import RowingSession, RowingDataPoint, RawRowingData
 from .rowing_analyzer import RowingAnalyzer
 
 PORT = "/dev/ttyUSB0"   # Linux/macOS example
@@ -64,7 +64,7 @@ def reset_session(ser: serial.Serial) -> bool:
         if response is None:
             return False
         
-def decode_rowing_data(data: str) -> dict:
+def decode_rowing_data(data: str) -> RawRowingData | None:
     """
     Decode rowing data in format: A5 00001 00010 002 19 022 129 0744 09
     
@@ -79,23 +79,25 @@ def decode_rowing_data(data: str) -> dict:
     - Position 20-22: Power (watts)
     - Position 23-26: Calories per hour
     - Position 27-28: Resistance level
+    
+    Returns:
+        RawRowingData object with cumulative values, or None on error
     """
     try:
         time_500m_minutes = int(data[13:15])
         time_500m_seconds = int(data[15:17])
         time_500m_total_secs = (time_500m_minutes * 60) + time_500m_seconds
         
-        result = {
-            "device_type": int(data[1]) if data[0] == 'A' else None,
-            "row_duration_secs": int(data[2:7]),
-            "row_distance_m": int(data[7:12]),
-            "time_500m_secs": time_500m_total_secs,
-            "strokes_per_min": int(data[17:20]),
-            "power_watts": int(data[20:23]),
-            "calories_per_hour": int(data[23:27]),
-            "resistance_level": int(data[27:29]),
-        }
-        return result
+        return RawRowingData(
+            device_type=int(data[1]) if data[0] == 'A' else None,
+            cumulative_duration_secs=int(data[2:7]),
+            cumulative_distance_m=int(data[7:12]),
+            time_500m_secs=time_500m_total_secs,
+            strokes_per_min=int(data[17:20]),
+            power_watts=int(data[20:23]),
+            calories_per_hour=int(data[23:27]),
+            resistance_level=int(data[27:29]),
+        )
     except (IndexError, ValueError) as e:
         print(f"Error decoding rowing data '{data}': {e}")
         return None
@@ -128,8 +130,8 @@ def rowing_session(ser: serial.Serial):
                 if decoded:
                     # Calculate per-stroke deltas
                     if previous_data:
-                        stroke_distance = decoded['row_distance_m'] - previous_data['row_distance_m']
-                        stroke_duration = decoded['row_duration_secs'] - previous_data['row_duration_secs']
+                        stroke_distance = decoded.cumulative_distance_m - previous_data.cumulative_distance_m
+                        stroke_duration = decoded.cumulative_duration_secs - previous_data.cumulative_duration_secs
                         
                         total_distance += stroke_distance
                         total_duration += stroke_duration
@@ -138,20 +140,20 @@ def rowing_session(ser: serial.Serial):
                         point = RowingDataPoint(
                             stroke_distance_m=stroke_distance,
                             stroke_duration_secs=stroke_duration,
-                            time_500m_secs=decoded['time_500m_secs'],
-                            strokes_per_min=decoded['strokes_per_min'],
-                            power_watts=decoded['power_watts'],
-                            calories_per_hour=decoded['calories_per_hour'],
-                            resistance_level=decoded['resistance_level'],
+                            time_500m_secs=decoded.time_500m_secs,
+                            strokes_per_min=decoded.strokes_per_min,
+                            power_watts=decoded.power_watts,
+                            calories_per_hour=decoded.calories_per_hour,
+                            resistance_level=decoded.resistance_level,
                         )
                         session.add_point(point)
                         
                         # Display live stats
                         stats = RowingAnalyzer.get_live_stats(session.data_points)
                         print(f"Distance: {total_distance}m | Duration: {total_duration}s | "
-                              f"Avg 500m: {stats['mean_time_500m_secs']:.1f}s | "
-                              f"Avg Power: {stats['mean_power_watts']:.0f}W | "
-                              f"SPM: {decoded['strokes_per_min']}")
+                              f"Avg 500m: {stats.mean_time_500m_secs:.1f}s | "
+                              f"Avg Power: {stats.mean_power_watts:.0f}W | "
+                              f"SPM: {decoded.strokes_per_min}")
                     
                     previous_data = decoded
 
@@ -166,12 +168,12 @@ def rowing_session(ser: serial.Serial):
             session.save()
             stats = RowingAnalyzer.get_live_stats(session.data_points)
             print("\n=== Session Summary ===")
-            print(f"Total strokes: {stats['num_strokes']}")
-            print(f"Total distance: {stats['total_distance_m']:.1f}m")
-            print(f"Total duration: {stats['total_duration_secs']:.0f}s")
-            print(f"Mean 500m pace: {stats['mean_time_500m_secs']:.1f}s")
-            print(f"Mean power: {stats['mean_power_watts']:.0f}W")
-            print(f"Total calories: {stats['total_calories']:.0f}/hr")
+            print(f"Total strokes: {stats.num_strokes}")
+            print(f"Total distance: {stats.total_distance_m:.1f}m")
+            print(f"Total duration: {stats.total_duration_secs:.0f}s")
+            print(f"Mean 500m pace: {stats.mean_time_500m_secs:.1f}s")
+            print(f"Mean power: {stats.mean_power_watts:.0f}W")
+            print(f"Total calories: {stats.total_calories:.0f}/hr")
             print(f"Session saved to: {session.filename}")
         else:
             print("No data recorded in session.")

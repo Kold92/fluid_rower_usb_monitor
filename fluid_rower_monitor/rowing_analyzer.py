@@ -3,14 +3,14 @@
 from dataclasses import asdict
 from pathlib import Path
 import pandas as pd
-from .rowing_data import RowingDataPoint
+from .rowing_data import RowingDataPoint, SessionStats
 
 
 class RowingAnalyzer:
     """Shared analysis functions for live and historical rowing data."""
     
     @staticmethod
-    def calculate_stats(df: pd.DataFrame) -> dict:
+    def calculate_stats(df: pd.DataFrame) -> SessionStats | None:
         """
         Calculate statistics from rowing DataFrame.
         Works with both live and historical data.
@@ -19,29 +19,29 @@ class RowingAnalyzer:
             df: DataFrame with RowingDataPoint columns
             
         Returns:
-            Dictionary with computed statistics
+            SessionStats object with computed statistics, or None if empty
         """
         if df.empty:
-            return {}
+            return None
         
-        return {
-            "num_strokes": len(df),
-            "total_distance_m": df['stroke_distance_m'].sum(),
-            "total_duration_secs": df['stroke_duration_secs'].sum(),
-            "mean_time_500m_secs": df['time_500m_secs'].mean(),
-            "min_time_500m_secs": df['time_500m_secs'].min(),
-            "max_time_500m_secs": df['time_500m_secs'].max(),
-            "mean_strokes_per_min": df['strokes_per_min'].mean(),
-            "max_strokes_per_min": df['strokes_per_min'].max(),
-            "mean_power_watts": df['power_watts'].mean(),
-            "max_power_watts": df['power_watts'].max(),
-            "min_power_watts": df['power_watts'].min(),
-            "total_calories": df['calories_per_hour'].sum(),
-            "mean_resistance": df['resistance_level'].mean(),
-        }
+        return SessionStats(
+            num_strokes=len(df),
+            total_distance_m=df['stroke_distance_m'].sum(),
+            total_duration_secs=df['stroke_duration_secs'].sum(),
+            mean_time_500m_secs=df['time_500m_secs'].mean(),
+            min_time_500m_secs=df['time_500m_secs'].min(),
+            max_time_500m_secs=df['time_500m_secs'].max(),
+            mean_strokes_per_min=df['strokes_per_min'].mean(),
+            max_strokes_per_min=df['strokes_per_min'].max(),
+            mean_power_watts=df['power_watts'].mean(),
+            max_power_watts=df['power_watts'].max(),
+            min_power_watts=df['power_watts'].min(),
+            total_calories=df['calories_per_hour'].sum(),
+            mean_resistance=df['resistance_level'].mean(),
+        )
     
     @staticmethod
-    def get_live_stats(data_points: list[RowingDataPoint]) -> dict:
+    def get_live_stats(data_points: list[RowingDataPoint]) -> SessionStats | None:
         """
         Analyze live session data.
         
@@ -49,16 +49,16 @@ class RowingAnalyzer:
             data_points: List of RowingDataPoint objects from current session
             
         Returns:
-            Dictionary with computed statistics
+            SessionStats object with computed statistics, or None if empty
         """
         if not data_points:
-            return {}
+            return None
         
         df = pd.DataFrame([asdict(p) for p in data_points])
         return RowingAnalyzer.calculate_stats(df)
     
     @staticmethod
-    def get_historical_stats(filepath: Path) -> dict:
+    def get_historical_stats(filepath: Path) -> SessionStats | None:
         """
         Analyze historical session from parquet file.
         
@@ -66,13 +66,13 @@ class RowingAnalyzer:
             filepath: Path to parquet file
             
         Returns:
-            Dictionary with computed statistics
+            SessionStats object with computed statistics, or None if file doesn't exist
         """
         if isinstance(filepath, str):
             filepath = Path(filepath)
         
         if not filepath.exists():
-            return {}
+            return None
         
         df = pd.read_parquet(filepath)
         return RowingAnalyzer.calculate_stats(df)
@@ -105,20 +105,20 @@ class RowingAnalyzer:
             filepath2: Path to second session
             
         Returns:
-            Dictionary with stats for both sessions and differences
+            Dictionary with stats for both sessions and differences, or None if either file doesn't exist
         """
         stats1 = RowingAnalyzer.get_historical_stats(filepath1)
         stats2 = RowingAnalyzer.get_historical_stats(filepath2)
         
         if not stats1 or not stats2:
-            return {}
+            return None
         
         return {
             "session1": stats1,
             "session2": stats2,
-            "distance_diff_m": stats2['total_distance_m'] - stats1['total_distance_m'],
-            "power_diff_watts": stats2['mean_power_watts'] - stats1['mean_power_watts'],
-            "pace_diff_secs": stats2['mean_time_500m_secs'] - stats1['mean_time_500m_secs'],
+            "distance_diff_m": stats2.total_distance_m - stats1.total_distance_m,
+            "power_diff_watts": stats2.mean_power_watts - stats1.mean_power_watts,
+            "pace_diff_secs": stats2.mean_time_500m_secs - stats1.mean_time_500m_secs,
         }
 
 

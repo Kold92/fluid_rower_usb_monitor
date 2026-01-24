@@ -8,8 +8,21 @@ import polars as pl
 
 
 @dataclass
+class RawRowingData:
+    """Raw cumulative data from the rowing device (before delta calculation)."""
+    device_type: int | None      # Device type identifier (A5 -> 5)
+    cumulative_duration_secs: int  # Total time since session start
+    cumulative_distance_m: int     # Total distance since session start
+    time_500m_secs: int           # Current 500m pace in seconds
+    strokes_per_min: int          # Current stroke rate
+    power_watts: int              # Current power output
+    calories_per_hour: int        # Current calorie burn rate
+    resistance_level: int         # Current resistance level
+
+
+@dataclass
 class RowingDataPoint:
-    """Single rowing stroke data point from the device."""
+    """Single rowing stroke data point (per-stroke, not cumulative)."""
     stroke_duration_secs: float  # Duration of this stroke
     stroke_distance_m: float     # Distance covered in this stroke
     time_500m_secs: int          # Current 500m pace in seconds
@@ -17,6 +30,24 @@ class RowingDataPoint:
     power_watts: int             # Power output for this stroke
     calories_per_hour: int       # Current calorie burn rate
     resistance_level: int        # Current resistance level
+
+
+@dataclass
+class SessionStats:
+    """Statistics calculated from a rowing session."""
+    num_strokes: int
+    total_distance_m: float
+    total_duration_secs: float
+    mean_time_500m_secs: float
+    min_time_500m_secs: int
+    max_time_500m_secs: int
+    mean_strokes_per_min: float
+    max_strokes_per_min: int
+    mean_power_watts: float
+    max_power_watts: int
+    min_power_watts: int
+    total_calories: int
+    mean_resistance: float
 
 
 class RowingSession:

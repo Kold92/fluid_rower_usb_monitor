@@ -41,3 +41,8 @@ Thumbs.db
 
 # Project specific
 *.log
+# Test coverage & tox
+.coverage
+.coverage.*
+htmlcov/
+.tox/
