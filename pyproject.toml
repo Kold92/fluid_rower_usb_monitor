@@ -40,6 +40,7 @@ dev = [
     "tox>=3.24",
     "flake8>=4.0",
     "black>=22.0",
+    "tomli>=2.0.0; python_version < '3.11'",
 ]
 
 [project.urls]
@@ -53,7 +54,7 @@ fluid-rower-monitor = "fluid_rower_monitor.serial_conn:main"
 # Tool configurations
 [tool.black]
 line-length = 120
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py312']
 include = '\.pyi?$'
 exclude = '''
 /(

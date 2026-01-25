@@ -1,5 +1,7 @@
+import argparse
 import serial
 import time
+from . import __version__
 from .rowing_data import RowingSession, RowingDataPoint, RawRowingData
 from .rowing_analyzer import RowingAnalyzer
 from .settings import AppSettings, ensure_config_exists
@@ -273,4 +275,7 @@ def main(settings: AppSettings | None = None):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Fluid Rower USB Monitor - Track and analyze rowing sessions")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.parse_args()
     main()
