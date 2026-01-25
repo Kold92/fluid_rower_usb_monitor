@@ -5,7 +5,15 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import polars as pl
-
+from .columns import (
+    STROKE_DISTANCE_M,
+    STROKE_DURATION_SECS,
+    TIME_500M_SECS,
+    STROKES_PER_MIN,
+    POWER_WATTS,
+    CALORIES_PER_HOUR,
+    RESISTANCE_LEVEL,
+)
 @dataclass
 class AllSessionsStats:
     """Aggregated statistics across all saved rowing sessions."""
@@ -107,14 +115,14 @@ class RowingSession:
         return {
             "session_start": self.session_start,
             "num_strokes": len(self.data_points),
-            "total_distance_m": df['stroke_distance_m'].sum(),
-            "total_duration_secs": df['stroke_duration_secs'].sum(),
-            "avg_watts": df['power_watts'].mean(),
-            "max_watts": df['power_watts'].max(),
-            "min_watts": df['power_watts'].min(),
-            "avg_strokes_per_min": df['strokes_per_min'].mean(),
-            "total_calories": df['calories_per_hour'].sum(),
-            "avg_resistance": df['resistance_level'].mean(),
+            "total_distance_m": df[STROKE_DISTANCE_M].sum(),
+            "total_duration_secs": df[STROKE_DURATION_SECS].sum(),
+            "avg_watts": df[POWER_WATTS].mean(),
+            "max_watts": df[POWER_WATTS].max(),
+            "min_watts": df[POWER_WATTS].min(),
+            "avg_strokes_per_min": df[STROKES_PER_MIN].mean(),
+            "total_calories": df[CALORIES_PER_HOUR].sum(),
+            "avg_resistance": df[RESISTANCE_LEVEL].mean(),
         }
     
     @staticmethod
@@ -156,11 +164,11 @@ class RowingSession:
         return AllSessionsStats(
             total_sessions=len(session_files),
             total_strokes=combined.shape[0],
-            total_distance_m=combined['stroke_distance_m'].sum(),
-            avg_watts_all_time=combined['power_watts'].mean(),
-            max_watts_all_time=combined['power_watts'].max(),
-            total_calories=combined['calories_per_hour'].sum(),
-            avg_strokes_per_min_all_time=combined['strokes_per_min'].mean(),
+            total_distance_m=combined[STROKE_DISTANCE_M].sum(),
+            avg_watts_all_time=combined[POWER_WATTS].mean(),
+            max_watts_all_time=combined[POWER_WATTS].max(),
+            total_calories=combined[CALORIES_PER_HOUR].sum(),
+            avg_strokes_per_min_all_time=combined[STROKES_PER_MIN].mean(),
         )
 
 # Example usage

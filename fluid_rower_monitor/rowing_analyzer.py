@@ -4,6 +4,15 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 import pandas as pd
 from .rowing_data import RowingDataPoint, SessionStats
+from .columns import (
+    STROKE_DISTANCE_M,
+    STROKE_DURATION_SECS,
+    TIME_500M_SECS,
+    STROKES_PER_MIN,
+    POWER_WATTS,
+    CALORIES_PER_HOUR,
+    RESISTANCE_LEVEL,
+)
 
 
 @dataclass
@@ -36,18 +45,18 @@ class RowingAnalyzer:
         
         return SessionStats(
             num_strokes=len(df),
-            total_distance_m=df['stroke_distance_m'].sum(),
-            total_duration_secs=df['stroke_duration_secs'].sum(),
-            mean_time_500m_secs=df['time_500m_secs'].mean(),
-            min_time_500m_secs=df['time_500m_secs'].min(),
-            max_time_500m_secs=df['time_500m_secs'].max(),
-            mean_strokes_per_min=df['strokes_per_min'].mean(),
-            max_strokes_per_min=df['strokes_per_min'].max(),
-            mean_power_watts=df['power_watts'].mean(),
-            max_power_watts=df['power_watts'].max(),
-            min_power_watts=df['power_watts'].min(),
-            total_calories=df['calories_per_hour'].sum(),
-            mean_resistance=df['resistance_level'].mean(),
+            total_distance_m=df[STROKE_DISTANCE_M].sum(),
+            total_duration_secs=df[STROKE_DURATION_SECS].sum(),
+            mean_time_500m_secs=df[TIME_500M_SECS].mean(),
+            min_time_500m_secs=df[TIME_500M_SECS].min(),
+            max_time_500m_secs=df[TIME_500M_SECS].max(),
+            mean_strokes_per_min=df[STROKES_PER_MIN].mean(),
+            max_strokes_per_min=df[STROKES_PER_MIN].max(),
+            mean_power_watts=df[POWER_WATTS].mean(),
+            max_power_watts=df[POWER_WATTS].max(),
+            min_power_watts=df[POWER_WATTS].min(),
+            total_calories=df[CALORIES_PER_HOUR].sum(),
+            mean_resistance=df[RESISTANCE_LEVEL].mean(),
         )
     
     @staticmethod
