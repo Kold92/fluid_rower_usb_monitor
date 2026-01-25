@@ -1,9 +1,19 @@
 """Analysis module for rowing data - works with both live and historical sessions."""
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 import pandas as pd
 from .rowing_data import RowingDataPoint, SessionStats
+
+
+@dataclass
+class SessionComparison:
+    """Comparison between two rowing sessions."""
+    session1: SessionStats
+    session2: SessionStats
+    distance_diff_m: float
+    power_diff_watts: float
+    pace_diff_secs: float
 
 
 class RowingAnalyzer:
@@ -96,7 +106,7 @@ class RowingAnalyzer:
         return pd.read_parquet(filepath)
     
     @staticmethod
-    def compare_sessions(filepath1: Path, filepath2: Path) -> dict:
+    def compare_sessions(filepath1: Path, filepath2: Path) -> SessionComparison | None:
         """
         Compare statistics between two sessions.
         
@@ -105,7 +115,7 @@ class RowingAnalyzer:
             filepath2: Path to second session
             
         Returns:
-            Dictionary with stats for both sessions and differences, or None if either file doesn't exist
+            SessionComparison with stats for both sessions and differences, or None if either file doesn't exist
         """
         stats1 = RowingAnalyzer.get_historical_stats(filepath1)
         stats2 = RowingAnalyzer.get_historical_stats(filepath2)
@@ -113,13 +123,13 @@ class RowingAnalyzer:
         if not stats1 or not stats2:
             return None
         
-        return {
-            "session1": stats1,
-            "session2": stats2,
-            "distance_diff_m": stats2.total_distance_m - stats1.total_distance_m,
-            "power_diff_watts": stats2.mean_power_watts - stats1.mean_power_watts,
-            "pace_diff_secs": stats2.mean_time_500m_secs - stats1.mean_time_500m_secs,
-        }
+        return SessionComparison(
+            session1=stats1,
+            session2=stats2,
+            distance_diff_m=stats2.total_distance_m - stats1.total_distance_m,
+            power_diff_watts=stats2.mean_power_watts - stats1.mean_power_watts,
+            pace_diff_secs=stats2.mean_time_500m_secs - stats1.mean_time_500m_secs,
+        )
 
 
 # Example usage

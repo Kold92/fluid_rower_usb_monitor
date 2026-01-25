@@ -6,7 +6,7 @@ import tempfile
 import shutil
 import pandas as pd
 from datetime import datetime
-from fluid_rower_monitor.rowing_analyzer import RowingAnalyzer
+from fluid_rower_monitor.rowing_analyzer import RowingAnalyzer, SessionComparison
 from fluid_rower_monitor.rowing_data import RowingDataPoint, RowingSession, SessionStats
 
 
@@ -331,11 +331,12 @@ class TestRowingAnalyzerCompareSessions:
         # Compare
         result = RowingAnalyzer.compare_sessions(session1.filename, session2.filename)
 
-        assert "session1" in result
-        assert "session2" in result
-        assert result["distance_diff_m"] == 1.0
-        assert result["power_diff_watts"] == 20.0
-        assert result["pace_diff_secs"] == -5  # Session 2 is 5 seconds faster
+        assert isinstance(result, SessionComparison)
+        assert result.distance_diff_m == 1.0
+        assert result.power_diff_watts == 20.0
+        assert result.pace_diff_secs == -5  # Session 2 is 5 seconds faster
+        assert isinstance(result.session1, SessionStats)
+        assert isinstance(result.session2, SessionStats)
 
     def test_compare_sessions_nonexistent(self):
         """Test comparing when one or both files don't exist."""

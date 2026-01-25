@@ -6,6 +6,16 @@ from pathlib import Path
 import pandas as pd
 import polars as pl
 
+@dataclass
+class AllSessionsStats:
+    """Aggregated statistics across all saved rowing sessions."""
+    total_sessions: int
+    total_strokes: int
+    total_distance_m: float
+    avg_watts_all_time: float
+    max_watts_all_time: float
+    total_calories: float
+    avg_strokes_per_min_all_time: float
 
 @dataclass
 class RawRowingData:
@@ -131,29 +141,27 @@ class RowingSession:
         return pd.read_parquet(filepath)
     
     @staticmethod
-    def analyze_all_sessions(data_dir: str = "rowing_sessions") -> dict:
+    def analyze_all_sessions(data_dir: str = "rowing_sessions") -> AllSessionsStats | None:
         """Analyze all sessions using Polars for fast aggregation."""
         session_files = RowingSession.list_sessions(data_dir)
         
         if not session_files:
             print(f"No sessions found in {data_dir}")
-            return {}
+            return None
         
         # Read all parquet files with Polars
         dfs = [pl.read_parquet(str(f)) for f in session_files]
         combined = pl.concat(dfs)
         
-        stats = {
-            "total_sessions": len(session_files),
-            "total_strokes": combined.shape[0],
-            "total_distance_m": combined['stroke_distance_m'].sum(),
-            "avg_watts_all_time": combined['power_watts'].mean(),
-            "max_watts_all_time": combined['power_watts'].max(),
-            "total_calories": combined['calories_per_hour'].sum(),
-            "avg_strokes_per_min_all_time": combined['strokes_per_min'].mean(),
-        }
-        
-        return stats
+        return AllSessionsStats(
+            total_sessions=len(session_files),
+            total_strokes=combined.shape[0],
+            total_distance_m=combined['stroke_distance_m'].sum(),
+            avg_watts_all_time=combined['power_watts'].mean(),
+            max_watts_all_time=combined['power_watts'].max(),
+            total_calories=combined['calories_per_hour'].sum(),
+            avg_strokes_per_min_all_time=combined['strokes_per_min'].mean(),
+        )
 
 # Example usage
 if __name__ == "__main__":
