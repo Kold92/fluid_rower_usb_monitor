@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import polars as pl
+import pyarrow as pa
+import pyarrow.parquet as pq
 from .columns import (
     STROKE_DISTANCE_M,
     STROKE_DURATION_SECS,
@@ -13,6 +15,10 @@ from .columns import (
     CALORIES_PER_HOUR,
     RESISTANCE_LEVEL,
 )
+
+# Schema version for parquet files. Increment when changing data format.
+# Used for data migrations when schema changes in future versions.
+SCHEMA_VERSION = 1
 
 
 @dataclass
@@ -118,7 +124,7 @@ class RowingSession:
         self.data_points.append(point)
 
     def save(self) -> None:
-        """Save session to parquet file."""
+        """Save session to parquet file with schema version metadata."""
         if not self.data_points:
             print(f"No data points to save for session {self.session_start}")
             return
@@ -127,7 +133,13 @@ class RowingSession:
         data_dicts = [asdict(p) for p in self.data_points]
         df = pd.DataFrame(data_dicts)
 
-        df.to_parquet(self.filename, index=False)
+        # Convert to Arrow table and add schema version metadata
+        table = pa.Table.from_pandas(df)
+        # Store schema version in file-level metadata
+        table = table.replace_schema_metadata(
+            {b"schema_version": str(SCHEMA_VERSION).encode(), **(table.schema.metadata or {})}
+        )
+        pq.write_table(table, self.filename)
         print(f"Session saved to {self.filename}")
 
     def partial_save(self, from_index: int = 0) -> None:
@@ -141,15 +153,24 @@ class RowingSession:
 
         data_dicts = [asdict(p) for p in partial_points]
         df_new = pd.DataFrame(data_dicts)
+        table_new = pa.Table.from_pandas(df_new)
 
         if self.filename.exists():
             # File exists: append new rows
             df_existing = pd.read_parquet(self.filename)
             df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-            df_combined.to_parquet(self.filename, index=False)
+            table_combined = pa.Table.from_pandas(df_combined)
+            # Preserve schema version metadata
+            table_combined = table_combined.replace_schema_metadata(
+                {b"schema_version": str(SCHEMA_VERSION).encode(), **(table_combined.schema.metadata or {})}
+            )
+            pq.write_table(table_combined, self.filename)
         else:
-            # File doesn't exist: create it
-            df_new.to_parquet(self.filename, index=False)
+            # File doesn't exist: create it with schema version metadata
+            table_new = table_new.replace_schema_metadata(
+                {b"schema_version": str(SCHEMA_VERSION).encode(), **(table_new.schema.metadata or {})}
+            )
+            pq.write_table(table_new, self.filename)
 
     def get_stats(self) -> dict:
         """Get statistics for this session."""
@@ -189,10 +210,30 @@ class RowingSession:
 
     @staticmethod
     def load_session(filepath: Path) -> pd.DataFrame:
-        """Load a session from parquet file."""
+        """Load a session from parquet file, validating schema version."""
         if isinstance(filepath, str):
             filepath = Path(filepath)
-        return pd.read_parquet(filepath)
+
+        df = pd.read_parquet(filepath)
+
+        # Validate schema version from metadata
+        parquet_file = pq.ParquetFile(filepath)
+        metadata = parquet_file.schema_arrow.metadata or {}
+        file_schema_version = metadata.get(b"schema_version", b"1").decode("utf-8")
+
+        try:
+            file_version = int(file_schema_version)
+        except (ValueError, AttributeError):
+            file_version = 1  # Default to 1 if not found or invalid
+
+        if file_version != SCHEMA_VERSION:
+            raise ValueError(
+                f"Schema version mismatch: file has v{file_version}, "
+                f"but current code expects v{SCHEMA_VERSION}. "
+                f"Data migration may be required."
+            )
+
+        return df
 
     @staticmethod
     def analyze_all_sessions(data_dir: str = "rowing_sessions") -> AllSessionsStats | None:
