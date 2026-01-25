@@ -2,7 +2,7 @@ import serial
 import time
 from .rowing_data import RowingSession, RowingDataPoint, RawRowingData
 from .rowing_analyzer import RowingAnalyzer
-from .settings import AppSettings
+from .settings import AppSettings, ensure_config_exists
 
 PORT = "/dev/ttyUSB0"  # Linux/macOS example
 # PORT = "COM3"        # Windows example
@@ -244,6 +244,14 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
 
 
 def main(settings: AppSettings | None = None):
+    # Ensure config.yaml exists before loading settings
+    if settings is None:
+        try:
+            ensure_config_exists()
+        except FileNotFoundError as e:
+            print(f"Configuration error: {e}")
+            return
+
     settings = settings or AppSettings()
     try:
         ser = setup_serial(settings.serial.port, settings.serial.baudrate, settings.serial.timeout_secs)

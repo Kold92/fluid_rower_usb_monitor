@@ -6,6 +6,7 @@ Priority: env vars (FRM_ prefix, nested via __) > YAML file (FRM_CONFIG_FILE or 
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 from typing import Any, Dict
 
@@ -14,6 +15,7 @@ from pydantic import BaseModel, Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_CONFIG_PATH = "config.yaml"
+EXAMPLE_CONFIG_PATH = "config.example.yaml"
 
 
 class SerialSettings(BaseModel):
@@ -93,3 +95,32 @@ def load_settings(config_path: str | Path | None = None) -> AppSettings:
     if config_path is not None:
         os.environ["FRM_CONFIG_FILE"] = str(config_path)
     return AppSettings()
+
+
+def ensure_config_exists(config_path: str | Path | None = None) -> Path:
+    """Ensure config.yaml exists, creating it from config.example.yaml if needed.
+
+    Args:
+        config_path: Optional explicit config path. If None, uses DEFAULT_CONFIG_PATH.
+
+    Returns:
+        Path to the config file (existing or newly created).
+
+    Raises:
+        FileNotFoundError: If config.example.yaml is missing when needed.
+    """
+    target = Path(config_path) if config_path else Path(DEFAULT_CONFIG_PATH)
+
+    if target.exists():
+        return target
+
+    # Config doesn't exist, try to copy from example
+    example = Path(EXAMPLE_CONFIG_PATH)
+    if not example.exists():
+        raise FileNotFoundError(
+            f"Config file '{target}' not found and example file '{example}' is missing. "
+            "Cannot generate default configuration."
+        )
+
+    shutil.copy(example, target)
+    return target
