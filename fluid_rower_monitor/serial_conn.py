@@ -2,6 +2,7 @@ import serial
 import time
 from .rowing_data import RowingSession, RowingDataPoint, RawRowingData
 from .rowing_analyzer import RowingAnalyzer
+from .settings import AppSettings
 
 PORT = "/dev/ttyUSB0"  # Linux/macOS example
 # PORT = "COM3"        # Windows example
@@ -63,6 +64,23 @@ def reset_session(ser: serial.Serial) -> bool:
             return False
 
 
+def attempt_reconnect(settings: AppSettings, sleep_fn=None) -> serial.Serial | None:
+    """Try to re-establish the serial connection with backoff.
+
+    Returns the newly connected serial object or None if retries exhausted.
+    """
+    sleep = sleep_fn or time.sleep
+    for attempt in range(settings.reconnect.max_attempts):
+        try:
+            ser = setup_serial(settings.serial.port, settings.serial.baudrate, settings.serial.timeout_secs)
+            if connect_to_device(ser):
+                return ser
+        except serial.SerialException as exc:
+            print(f"Reconnect attempt {attempt + 1} failed: {exc}")
+        sleep(settings.reconnect.backoff_secs)
+    return None
+
+
 def decode_rowing_data(data: str) -> RawRowingData | None:
     """
     Decode rowing data in format: A5 00001 00010 002 19 022 129 0744 09
@@ -102,17 +120,19 @@ def decode_rowing_data(data: str) -> RawRowingData | None:
         return None
 
 
-def rowing_session(ser: serial.Serial):
+def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
     """
     Starts a new rowing session.
     Read rowing data, decode, store per-stroke data points, and save session.
     """
 
+    settings = settings or AppSettings()
+
     if not reset_session(ser):
         print("Failed to reset session.")
         return
 
-    session = RowingSession()
+    session = RowingSession(data_dir=settings.data.dir)
     print(f"New rowing session started. Saving to: {session.filename}")
     print()
 
@@ -122,7 +142,19 @@ def rowing_session(ser: serial.Serial):
 
     try:
         while True:
-            response = get_serial_response(ser, timeout=5)
+            try:
+                response = get_serial_response(ser, timeout=5)
+            except (serial.SerialException, OSError) as exc:
+                print(f"Serial read error: {exc}")
+                if ser and ser.is_open:
+                    ser.close()
+                ser = attempt_reconnect(settings)
+                # Reset rolling state after reconnect to avoid bad deltas
+                previous_data = None
+                if ser is None:
+                    print("Failed to reconnect; ending session.")
+                    break
+                continue
 
             if response and response.startswith("A"):
                 decoded = decode_rowing_data(response)
@@ -180,15 +212,16 @@ def rowing_session(ser: serial.Serial):
             print("No data recorded in session.")
 
 
-def main():
+def main(settings: AppSettings | None = None):
+    settings = settings or AppSettings()
     try:
-        ser = setup_serial(PORT, BAUDRATE, TIMEOUT)
+        ser = setup_serial(settings.serial.port, settings.serial.baudrate, settings.serial.timeout_secs)
 
         if not connect_to_device(ser):
             print("Could not connect to device. Exiting.")
             return
 
-        rowing_session(ser)
+        rowing_session(ser, settings=settings)
 
     except serial.SerialException as e:
         print(f"Serial error: {e}")

@@ -1,13 +1,16 @@
 """Tests for serial I/O functions with mocked serial port."""
 
+import serial
 from unittest.mock import MagicMock, patch
 
+from fluid_rower_monitor.settings import AppSettings
 from fluid_rower_monitor.serial_conn import (
     setup_serial,
     get_serial_response,
     connect_to_device,
     reset_session,
     rowing_session,
+    attempt_reconnect,
 )
 
 
@@ -205,6 +208,54 @@ class TestResetSession:
             result = reset_session(mock_ser)
 
             assert result is True
+
+
+class TestReconnect:
+    """Tests for reconnect helper."""
+
+    def test_attempt_reconnect_succeeds_after_transient_failure(self, monkeypatch):
+        settings = AppSettings()
+        settings.reconnect.max_attempts = 3
+        settings.reconnect.backoff_secs = 0.1
+        call_order = []
+
+        def fake_setup(port, baudrate, timeout):
+            call_order.append((port, baudrate, timeout))
+            if len(call_order) == 1:
+                raise serial.SerialException("port busy")
+            mock_ser = MagicMock()
+            mock_ser.portstr = port
+            return mock_ser
+
+        sleep_calls = []
+
+        monkeypatch.setattr("fluid_rower_monitor.serial_conn.setup_serial", fake_setup)
+        monkeypatch.setattr("fluid_rower_monitor.serial_conn.connect_to_device", lambda ser: True)
+        monkeypatch.setattr("fluid_rower_monitor.serial_conn.time.sleep", lambda sec: sleep_calls.append(sec))
+
+        new_ser = attempt_reconnect(settings)
+
+        assert new_ser is not None
+        assert call_order[-1][0] == settings.serial.port
+        assert sleep_calls == [settings.reconnect.backoff_secs]
+
+    def test_attempt_reconnect_exhausts_attempts(self, monkeypatch):
+        settings = AppSettings()
+        settings.reconnect.max_attempts = 2
+        settings.reconnect.backoff_secs = 0.05
+
+        monkeypatch.setattr(
+            "fluid_rower_monitor.serial_conn.setup_serial",
+            lambda *args, **kwargs: (_ for _ in ()).throw(serial.SerialException("no port")),
+        )
+        sleep_calls = []
+        monkeypatch.setattr("fluid_rower_monitor.serial_conn.time.sleep", lambda sec: sleep_calls.append(sec))
+
+        new_ser = attempt_reconnect(settings)
+
+        assert new_ser is None
+        # sleep called between each failed attempt
+        assert sleep_calls == [settings.reconnect.backoff_secs, settings.reconnect.backoff_secs]
 
 
 class TestRowingSession:
