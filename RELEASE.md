@@ -5,11 +5,8 @@ This document outlines the process for releasing new versions of Fluid Rower Mon
 ## Pre-Release Checklist
 
 ### 1. Code Quality
-- [ ] All tests pass: `uv run pytest`
-- [ ] Full tox suite passes: `uv run tox`
-- [ ] Code is formatted: `uv run black fluid_rower_monitor tests`
-- [ ] Lint checks pass: `uv run flake8 fluid_rower_monitor tests --max-line-length=120 --ignore=E203,W503`
-- [ ] Coverage meets threshold (>80%): Check in tox output or `uv run pytest --cov=fluid_rower_monitor --cov-fail-under=80`
+- [ ] Full tox suite passes (runs all tests, lint, formatting, coverage): `uv run tox`
+  - This covers: pytest, flake8, black, coverage threshold
 
 ### 2. Version Numbers
 - [ ] Update `__version__` in `fluid_rower_monitor/__init__.py`
@@ -76,15 +73,8 @@ We follow [Semantic Versioning](https://semver.org/):
 Before any push:
 
 ```bash
-# Quick validation (runs in ~3 seconds)
-uv run pytest && uv run black fluid_rower_monitor tests && \
-  uv run flake8 fluid_rower_monitor tests --max-line-length=120 --ignore=E203,W503
-```
-
-For thorough validation before releases:
-
-```bash
-# Full validation with tox (runs in ~20 seconds)
+# Comprehensive validation (runs tests, lint, formatting, coverage)
+# This is the only command you need - it covers everything
 uv run tox
 ```
 
