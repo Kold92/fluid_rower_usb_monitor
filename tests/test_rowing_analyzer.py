@@ -1,6 +1,5 @@
 """Tests for rowing_analyzer module - analysis and statistics."""
 
-import pytest
 from pathlib import Path
 import tempfile
 import shutil
@@ -90,19 +89,19 @@ class TestRowingAnalyzerCalculateStats:
         result = RowingAnalyzer.calculate_stats(df)
 
         assert isinstance(result, SessionStats)
-        assert hasattr(result, 'num_strokes')
-        assert hasattr(result, 'total_distance_m')
-        assert hasattr(result, 'total_duration_secs')
-        assert hasattr(result, 'mean_time_500m_secs')
-        assert hasattr(result, 'min_time_500m_secs')
-        assert hasattr(result, 'max_time_500m_secs')
-        assert hasattr(result, 'mean_strokes_per_min')
-        assert hasattr(result, 'max_strokes_per_min')
-        assert hasattr(result, 'mean_power_watts')
-        assert hasattr(result, 'max_power_watts')
-        assert hasattr(result, 'min_power_watts')
-        assert hasattr(result, 'total_calories')
-        assert hasattr(result, 'mean_resistance')
+        assert hasattr(result, "num_strokes")
+        assert hasattr(result, "total_distance_m")
+        assert hasattr(result, "total_duration_secs")
+        assert hasattr(result, "mean_time_500m_secs")
+        assert hasattr(result, "min_time_500m_secs")
+        assert hasattr(result, "max_time_500m_secs")
+        assert hasattr(result, "mean_strokes_per_min")
+        assert hasattr(result, "max_strokes_per_min")
+        assert hasattr(result, "mean_power_watts")
+        assert hasattr(result, "max_power_watts")
+        assert hasattr(result, "min_power_watts")
+        assert hasattr(result, "total_calories")
+        assert hasattr(result, "mean_resistance")
 
 
 class TestRowingAnalyzerLiveStats:

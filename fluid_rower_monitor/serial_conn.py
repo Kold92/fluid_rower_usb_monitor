@@ -3,21 +3,18 @@ import time
 from .rowing_data import RowingSession, RowingDataPoint, RawRowingData
 from .rowing_analyzer import RowingAnalyzer
 
-PORT = "/dev/ttyUSB0"   # Linux/macOS example
+PORT = "/dev/ttyUSB0"  # Linux/macOS example
 # PORT = "COM3"        # Windows example
 BAUDRATE = 9600
-TIMEOUT = 2            # seconds - used for blocking read
+TIMEOUT = 2  # seconds - used for blocking read
 
 
 def setup_serial(port, baudrate, timeout):
-    ser = serial.Serial(
-        port=port,
-        baudrate=baudrate,
-        timeout=timeout
-    )
-        
+    ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+
     print(f"Connected to {ser.portstr}")
     return ser
+
 
 def get_serial_response(ser: serial.Serial, timeout: float) -> str | None:
     """Reads from serial or times out after 'timeout' seconds."""
@@ -25,11 +22,12 @@ def get_serial_response(ser: serial.Serial, timeout: float) -> str | None:
 
     while True:
         if ser.in_waiting:
-            return ser.readline().decode('utf-8', errors='ignore').strip()
-    
+            return ser.readline().decode("utf-8", errors="ignore").strip()
+
         if (time.time() - start_time) > timeout:
             return None
         time.sleep(0.1)
+
 
 def connect_to_device(ser: serial.Serial) -> bool:
     """
@@ -48,7 +46,7 @@ def connect_to_device(ser: serial.Serial) -> bool:
         else:
             print(f"  Got: {repr(response)}, retrying...")
             time.sleep(0.1)
-    
+
     print("✗ Failed to connect to device after max attempts")
     return False
 
@@ -63,11 +61,12 @@ def reset_session(ser: serial.Serial) -> bool:
             return True
         if response is None:
             return False
-        
+
+
 def decode_rowing_data(data: str) -> RawRowingData | None:
     """
     Decode rowing data in format: A5 00001 00010 002 19 022 129 0744 09
-    
+
     Format (fixed-width, no spaces):
     - Position 0-1: A5 (device type, A prefix + digit)
     - Position 2-6: Row duration (secs)
@@ -79,7 +78,7 @@ def decode_rowing_data(data: str) -> RawRowingData | None:
     - Position 20-22: Power (watts)
     - Position 23-26: Calories per hour
     - Position 27-28: Resistance level
-    
+
     Returns:
         RawRowingData object with cumulative values, or None on error
     """
@@ -87,9 +86,9 @@ def decode_rowing_data(data: str) -> RawRowingData | None:
         time_500m_minutes = int(data[13:15])
         time_500m_seconds = int(data[15:17])
         time_500m_total_secs = (time_500m_minutes * 60) + time_500m_seconds
-        
+
         return RawRowingData(
-            device_type=int(data[1]) if data[0] == 'A' else None,
+            device_type=int(data[1]) if data[0] == "A" else None,
             cumulative_duration_secs=int(data[2:7]),
             cumulative_distance_m=int(data[7:12]),
             time_500m_secs=time_500m_total_secs,
@@ -108,15 +107,15 @@ def rowing_session(ser: serial.Serial):
     Starts a new rowing session.
     Read rowing data, decode, store per-stroke data points, and save session.
     """
-    
+
     if not reset_session(ser):
         print("Failed to reset session.")
         return
-    
+
     session = RowingSession()
     print(f"New rowing session started. Saving to: {session.filename}")
     print()
-    
+
     previous_data = None
     total_distance = 0
     total_duration = 0
@@ -124,7 +123,7 @@ def rowing_session(ser: serial.Serial):
     try:
         while True:
             response = get_serial_response(ser, timeout=5)
-            
+
             if response and response.startswith("A"):
                 decoded = decode_rowing_data(response)
                 if decoded:
@@ -132,10 +131,10 @@ def rowing_session(ser: serial.Serial):
                     if previous_data:
                         stroke_distance = decoded.cumulative_distance_m - previous_data.cumulative_distance_m
                         stroke_duration = decoded.cumulative_duration_secs - previous_data.cumulative_duration_secs
-                        
+
                         total_distance += stroke_distance
                         total_duration += stroke_duration
-                        
+
                         # Create data point with per-stroke values
                         point = RowingDataPoint(
                             stroke_distance_m=stroke_distance,
@@ -147,19 +146,21 @@ def rowing_session(ser: serial.Serial):
                             resistance_level=decoded.resistance_level,
                         )
                         session.add_point(point)
-                        
+
                         # Display live stats
                         stats = RowingAnalyzer.get_live_stats(session.data_points)
-                        print(f"Distance: {total_distance}m | Duration: {total_duration}s | "
-                              f"Avg 500m: {stats.mean_time_500m_secs:.1f}s | "
-                              f"Avg Power: {stats.mean_power_watts:.0f}W | "
-                              f"SPM: {decoded.strokes_per_min}")
-                    
+                        print(
+                            f"Distance: {total_distance}m | Duration: {total_duration}s | "
+                            f"Avg 500m: {stats.mean_time_500m_secs:.1f}s | "
+                            f"Avg Power: {stats.mean_power_watts:.0f}W | "
+                            f"SPM: {decoded.strokes_per_min}"
+                        )
+
                     previous_data = decoded
 
             elif response:
                 print(f"Received: {response}")
-                
+
     except KeyboardInterrupt:
         print("\n\nSession ended by user.")
     finally:
@@ -177,26 +178,27 @@ def rowing_session(ser: serial.Serial):
             print(f"Session saved to: {session.filename}")
         else:
             print("No data recorded in session.")
-        
+
 
 def main():
     try:
         ser = setup_serial(PORT, BAUDRATE, TIMEOUT)
-        
+
         if not connect_to_device(ser):
             print("Could not connect to device. Exiting.")
             return
-        
+
         rowing_session(ser)
-       
+
     except serial.SerialException as e:
         print(f"Serial error: {e}")
     except KeyboardInterrupt:
         print("\nExiting...")
     finally:
-        if 'ser' in locals() and ser.is_open:
+        if "ser" in locals() and ser.is_open:
             ser.close()
             print("Serial port closed")
+
 
 if __name__ == "__main__":
     main()

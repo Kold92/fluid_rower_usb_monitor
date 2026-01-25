@@ -8,6 +8,12 @@ from .rowing_data import RowingSession, RowingDataPoint, RawRowingData, SessionS
 from .rowing_analyzer import RowingAnalyzer, SessionComparison
 
 __all__ = [
-    "RowingSession", "RowingDataPoint", "RawRowingData", "SessionStats", "AllSessionsStats",
-    "RowingAnalyzer", "SessionComparison", "__version__"
+    "RowingSession",
+    "RowingDataPoint",
+    "RawRowingData",
+    "SessionStats",
+    "AllSessionsStats",
+    "RowingAnalyzer",
+    "SessionComparison",
+    "__version__",
 ]

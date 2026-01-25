@@ -1,6 +1,5 @@
 """Tests for serial_conn module - serial communication and data decoding."""
 
-import pytest
 from fluid_rower_monitor.serial_conn import decode_rowing_data
 from fluid_rower_monitor.rowing_data import RawRowingData
 
@@ -54,14 +53,14 @@ class TestDecodeRowingData:
         result = decode_rowing_data(data)
 
         assert result is not None
-        assert hasattr(result, 'device_type')
-        assert hasattr(result, 'cumulative_duration_secs')
-        assert hasattr(result, 'cumulative_distance_m')
-        assert hasattr(result, 'time_500m_secs')
-        assert hasattr(result, 'strokes_per_min')
-        assert hasattr(result, 'power_watts')
-        assert hasattr(result, 'calories_per_hour')
-        assert hasattr(result, 'resistance_level')
+        assert hasattr(result, "device_type")
+        assert hasattr(result, "cumulative_duration_secs")
+        assert hasattr(result, "cumulative_distance_m")
+        assert hasattr(result, "time_500m_secs")
+        assert hasattr(result, "strokes_per_min")
+        assert hasattr(result, "power_watts")
+        assert hasattr(result, "calories_per_hour")
+        assert hasattr(result, "resistance_level")
 
     def test_decode_returns_integers(self):
         """Test that all decoded fields are integers except device_type."""

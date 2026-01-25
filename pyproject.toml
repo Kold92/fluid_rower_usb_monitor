@@ -125,3 +125,7 @@ ignore = ["W503", "E501"]
 
 [tool.tox]
 legacy_tox_ini = "tox.ini"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fluid_rower_monitor*"]
+exclude = ["rowing_sessions*", "tests*", "htmlcov*"]

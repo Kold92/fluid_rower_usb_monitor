@@ -220,7 +220,7 @@ class TestRowingSession:
         new_dir = Path(self.temp_dir) / "new_sessions"
         assert not new_dir.exists()
 
-        session = RowingSession(data_dir=str(new_dir))
+        RowingSession(data_dir=str(new_dir))
 
         assert new_dir.exists()
 
@@ -244,6 +244,7 @@ class TestRowingSession:
 
         # Load the saved file and verify
         import pandas as pd
+
         loaded_df = pd.read_parquet(session.filename)
 
         assert len(loaded_df) == 3
@@ -348,11 +349,10 @@ class TestAnalyzeAllSessions:
         result = RowingSession.analyze_all_sessions(self.temp_dir)
 
         # Verify it's a dataclass with all expected attributes
-        assert hasattr(result, 'total_sessions')
-        assert hasattr(result, 'total_strokes')
-        assert hasattr(result, 'total_distance_m')
-        assert hasattr(result, 'avg_watts_all_time')
-        assert hasattr(result, 'max_watts_all_time')
-        assert hasattr(result, 'total_calories')
-        assert hasattr(result, 'avg_strokes_per_min_all_time')
-
+        assert hasattr(result, "total_sessions")
+        assert hasattr(result, "total_strokes")
+        assert hasattr(result, "total_distance_m")
+        assert hasattr(result, "avg_watts_all_time")
+        assert hasattr(result, "max_watts_all_time")
+        assert hasattr(result, "total_calories")
+        assert hasattr(result, "avg_strokes_per_min_all_time")
