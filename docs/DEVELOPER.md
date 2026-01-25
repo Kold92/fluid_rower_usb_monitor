@@ -557,6 +557,118 @@ See [ROADMAP.md](../ROADMAP.md) for full feature roadmap.
 **Technical Debt:**
 
 - Refactor flush mechanism for better performance
-- Add explicit schema versioning to Parquet files
 - Implement logging framework (replace print statements)
 - Add type stubs for pyserial
+
+---
+
+## Data Migrations
+
+The project uses a registry-based migration system to upgrade data files when the schema changes between versions.
+
+### Schema Versioning
+
+Each parquet file stores a `schema_version` in its metadata. The current version is defined in `rowing_data.py` as `SCHEMA_VERSION`.
+
+When `load_session()` encounters a file with an older schema version, it automatically applies migrations to upgrade the data.
+
+### Creating a Migration
+
+Migrations are defined in `fluid_rower_monitor/migrations.py` using the `@register_migration` decorator.
+
+**Example:** Adding a `session_type` column in schema v2:
+
+```python
+from fluid_rower_monitor.migrations import register_migration
+import pandas as pd
+
+@register_migration(1, 2, "Add session_type column to support different workout types")
+def migrate_v1_to_v2(df: pd.DataFrame) -> pd.DataFrame:
+    """Add session_type column with default value for existing sessions."""
+    df['session_type'] = 'rowing'  # Default for all existing sessions
+    return df
+```
+
+### Migration Best Practices
+
+1. **Always increment by 1:** Migrations should go from N to N+1
+2. **Test thoroughly:** Add test cases in `tests/test_migrations.py`
+3. **Preserve data:** Never delete columns unless absolutely necessary
+4. **Document changes:** Use descriptive migration descriptions
+5. **Handle edge cases:** Consider empty DataFrames, missing columns, etc.
+6. **Keep it simple:** Each migration should do one logical transformation
+
+### Migration Workflow
+
+When the schema changes:
+
+1. **Increment SCHEMA_VERSION** in `rowing_data.py`
+2. **Create migration function** in `migrations.py` using `@register_migration`
+3. **Add tests** in `tests/test_migrations.py`:
+   - Test migration function directly
+   - Test integration with `load_session()`
+   - Test multi-step migration path if needed
+4. **Update RELEASE.md** checklist to document schema change
+5. **Test with real data** before releasing
+
+### Migration Examples
+
+**Adding a column with default:**
+```python
+@register_migration(1, 2, "Add workout_intensity field")
+def migrate_v1_to_v2(df: pd.DataFrame) -> pd.DataFrame:
+    df['workout_intensity'] = 'medium'
+    return df
+```
+
+**Renaming a column:**
+```python
+@register_migration(2, 3, "Rename time_500m_secs to pace_500m_secs")
+def migrate_v2_to_v3(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.rename(columns={'time_500m_secs': 'pace_500m_secs'})
+    return df
+```
+
+**Computing derived fields:**
+```python
+@register_migration(3, 4, "Add speed_m_per_sec calculated field")
+def migrate_v3_to_v4(df: pd.DataFrame) -> pd.DataFrame:
+    # Calculate speed from stroke distance and duration
+    df['speed_m_per_sec'] = df['stroke_distance_m'] / df['stroke_duration_secs']
+    return df
+```
+
+### Disabling Auto-Migration
+
+By default, `load_session()` automatically applies migrations. To disable:
+
+```python
+# This will raise an error if schema version doesn't match
+df = RowingSession.load_session(filepath, auto_migrate=False)
+```
+
+### Testing Migrations
+
+```bash
+# Run migration tests
+uv run pytest tests/test_migrations.py -v
+
+# Run full test suite
+uv run tox
+```
+
+### Migration Troubleshooting
+
+**Error: "No migration found from vX to vY"**
+- Missing migration step in the sequence
+- Ensure all migrations from X to Y exist (X→X+1, X+1→X+2, etc.)
+
+**Error: "Cannot downgrade from vX to vY"**
+- Application version is older than data version
+- Update the application to the latest version
+
+**Error: "Migration from vX to vY failed"**
+- Migration function raised an exception
+- Check migration logic and test with sample data
+- Verify DataFrame columns exist before accessing them
+

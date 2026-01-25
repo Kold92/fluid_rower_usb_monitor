@@ -15,6 +15,7 @@ from .columns import (
     CALORIES_PER_HOUR,
     RESISTANCE_LEVEL,
 )
+from .migrations import apply_migrations
 
 # Schema version for parquet files. Increment when changing data format.
 # Used for data migrations when schema changes in future versions.
@@ -209,8 +210,21 @@ class RowingSession:
         print(f"Session deleted: {filepath}")
 
     @staticmethod
-    def load_session(filepath: Path) -> pd.DataFrame:
-        """Load a session from parquet file, validating schema version."""
+    def load_session(filepath: Path, auto_migrate: bool = True) -> pd.DataFrame:
+        """
+        Load a session from parquet file, validating schema version.
+
+        Args:
+            filepath: Path to the parquet file
+            auto_migrate: If True, automatically apply migrations for older schemas
+
+        Returns:
+            DataFrame with session data
+
+        Raises:
+            ValueError: If schema version mismatch and auto_migrate=False,
+                       or if migration fails
+        """
         if isinstance(filepath, str):
             filepath = Path(filepath)
 
@@ -227,11 +241,20 @@ class RowingSession:
             file_version = 1  # Default to 1 if not found or invalid
 
         if file_version != SCHEMA_VERSION:
-            raise ValueError(
-                f"Schema version mismatch: file has v{file_version}, "
-                f"but current code expects v{SCHEMA_VERSION}. "
-                f"Data migration may be required."
-            )
+            if auto_migrate and file_version < SCHEMA_VERSION:
+                # Apply migrations to upgrade data
+                df = apply_migrations(df, file_version, SCHEMA_VERSION)
+            elif file_version > SCHEMA_VERSION:
+                raise ValueError(
+                    f"File schema version v{file_version} is newer than "
+                    f"current code v{SCHEMA_VERSION}. Please upgrade the application."
+                )
+            else:
+                raise ValueError(
+                    f"Schema version mismatch: file has v{file_version}, "
+                    f"but current code expects v{SCHEMA_VERSION}. "
+                    f"Set auto_migrate=True to apply migrations automatically."
+                )
 
         return df
 

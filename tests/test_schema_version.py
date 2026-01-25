@@ -139,8 +139,8 @@ class TestSchemaVersionIntegration:
             table = table.replace_schema_metadata({b"schema_version": b"999"})
             pq.write_table(table, filepath)
 
-            # Should raise ValueError when loading
-            with pytest.raises(ValueError, match="Schema version mismatch"):
+            # Should raise ValueError when loading (newer version)
+            with pytest.raises(ValueError, match="newer than current code"):
                 RowingSession.load_session(filepath)
 
     def test_load_session_handles_missing_schema_version(self):
