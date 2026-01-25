@@ -1,0 +1,13 @@
+# Fluid Rower Monitor configuration (example)
+version: 1
+serial:
+  port: /dev/ttyUSB0
+  baudrate: 9600
+  timeout_secs: 2.0
+data:
+  dir: rowing_sessions
+logging:
+  level: INFO
+reconnect:
+  max_attempts: 5
+  backoff_secs: 0.5

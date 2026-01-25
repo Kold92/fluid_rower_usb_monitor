@@ -6,6 +6,7 @@ __description__ = "Monitor and analyze rowing sessions from a Fluid Rower device
 
 from .rowing_data import RowingSession, RowingDataPoint, RawRowingData, SessionStats, AllSessionsStats
 from .rowing_analyzer import RowingAnalyzer, SessionComparison
+from .settings import AppSettings, load_settings
 
 __all__ = [
     "RowingSession",
@@ -15,5 +16,7 @@ __all__ = [
     "AllSessionsStats",
     "RowingAnalyzer",
     "SessionComparison",
+    "AppSettings",
+    "load_settings",
     "__version__",
 ]
