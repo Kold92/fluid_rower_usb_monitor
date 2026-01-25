@@ -94,6 +94,25 @@ class RowingSession:
         self.filename = self.data_dir / f"{timestamp_str}.parquet"
         self.data_points: list[RowingDataPoint] = []
 
+        # Pause/resume tracking for resilience
+        self.pauses: list[tuple[datetime, datetime | None]] = []  # List of (paused_at, resumed_at)
+        self.paused_at: datetime | None = None  # Current pause time, or None if not paused
+        self.total_pause_secs: float = 0.0  # Cumulative pause duration
+
+    def pause(self) -> None:
+        """Mark session as paused (due to disconnection)."""
+        if self.paused_at is None:
+            self.paused_at = datetime.now()
+
+    def resume(self) -> None:
+        """Mark session as resumed (after reconnection)."""
+        if self.paused_at is not None:
+            resumed_at = datetime.now()
+            pause_duration = (resumed_at - self.paused_at).total_seconds()
+            self.pauses.append((self.paused_at, resumed_at))
+            self.total_pause_secs += pause_duration
+            self.paused_at = None
+
     def add_point(self, point: RowingDataPoint) -> None:
         """Add a rowing data point to the session."""
         self.data_points.append(point)
@@ -110,6 +129,27 @@ class RowingSession:
 
         df.to_parquet(self.filename, index=False)
         print(f"Session saved to {self.filename}")
+
+    def partial_save(self, from_index: int = 0) -> None:
+        """Save partial session data (for periodic flushing). Appends to existing file if present."""
+        if from_index >= len(self.data_points):
+            return
+
+        partial_points = self.data_points[from_index:]
+        if not partial_points:
+            return
+
+        data_dicts = [asdict(p) for p in partial_points]
+        df_new = pd.DataFrame(data_dicts)
+
+        if self.filename.exists():
+            # File exists: append new rows
+            df_existing = pd.read_parquet(self.filename)
+            df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+            df_combined.to_parquet(self.filename, index=False)
+        else:
+            # File doesn't exist: create it
+            df_new.to_parquet(self.filename, index=False)
 
     def get_stats(self) -> dict:
         """Get statistics for this session."""

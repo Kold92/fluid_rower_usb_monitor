@@ -33,6 +33,8 @@ class LoggingSettings(BaseModel):
 class ReconnectSettings(BaseModel):
     max_attempts: int = Field(5, ge=1, description="Max connection retry attempts")
     backoff_secs: float = Field(0.5, ge=0.0, description="Backoff between retries in seconds")
+    flush_interval_secs: float = Field(60.0, ge=1.0, description="Periodic session flush interval in seconds")
+    flush_after_strokes: int = Field(10, ge=1, description="Flush session after N strokes")
 
 
 class AppSettings(BaseSettings):

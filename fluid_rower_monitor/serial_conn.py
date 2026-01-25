@@ -124,6 +124,7 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
     """
     Starts a new rowing session.
     Read rowing data, decode, store per-stroke data points, and save session.
+    Supports periodic flushing, pause/resume tracking on disconnect/reconnect.
     """
 
     settings = settings or AppSettings()
@@ -139,6 +140,8 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
     previous_data = None
     total_distance = 0
     total_duration = 0
+    last_flush_time = time.time()
+    last_flush_index = 0
 
     try:
         while True:
@@ -146,14 +149,24 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
                 response = get_serial_response(ser, timeout=5)
             except (serial.SerialException, OSError) as exc:
                 print(f"Serial read error: {exc}")
+                session.pause()
+                # Flush partial data before disconnect
+                if session.data_points:
+                    session.partial_save(from_index=last_flush_index)
+                    last_flush_index = len(session.data_points)
+                    print(f"Partial session flushed ({len(session.data_points)} strokes)")
                 if ser and ser.is_open:
                     ser.close()
-                ser = attempt_reconnect(settings)
-                # Reset rolling state after reconnect to avoid bad deltas
-                previous_data = None
-                if ser is None:
+                new_ser = attempt_reconnect(settings)
+                if new_ser is None:
                     print("Failed to reconnect; ending session.")
                     break
+                ser = new_ser
+                session.resume()
+                print("Session resumed after reconnection.")
+                # Reset rolling state after reconnect to avoid bad deltas
+                previous_data = None
+                last_flush_time = time.time()
                 continue
 
             if response and response.startswith("A"):
@@ -188,6 +201,18 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
                             f"SPM: {decoded.strokes_per_min}"
                         )
 
+                        # Check flush triggers
+                        elapsed_since_flush = time.time() - last_flush_time
+                        strokes_since_flush = len(session.data_points) - last_flush_index
+                        if (
+                            elapsed_since_flush >= settings.reconnect.flush_interval_secs
+                            or strokes_since_flush >= settings.reconnect.flush_after_strokes
+                        ):
+                            session.partial_save(from_index=last_flush_index)
+                            last_flush_index = len(session.data_points)
+                            last_flush_time = time.time()
+                            print(f"Session flushed ({strokes_since_flush} new strokes)")
+
                     previous_data = decoded
 
             elif response:
@@ -196,6 +221,10 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
     except KeyboardInterrupt:
         print("\n\nSession ended by user.")
     finally:
+        # Ensure pause is finalized if still paused
+        if session.paused_at is not None:
+            session.resume()
+
         # Save session and show final stats
         if session.data_points:
             session.save()
@@ -207,6 +236,8 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
             print(f"Mean 500m pace: {stats.mean_time_500m_secs:.1f}s")
             print(f"Mean power: {stats.mean_power_watts:.0f}W")
             print(f"Total calories: {stats.total_calories:.0f}/hr")
+            if session.total_pause_secs > 0:
+                print(f"Total pause time: {session.total_pause_secs:.1f}s ({len(session.pauses)} interruptions)")
             print(f"Session saved to: {session.filename}")
         else:
             print("No data recorded in session.")
