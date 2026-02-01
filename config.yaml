@@ -14,4 +14,4 @@ reconnect:
   flush_after_strokes: 10
 ui:
   x_axis_type: samples
-  max_points: 20
+  max_points: 50

@@ -7,8 +7,10 @@ Supports both dev mode (synthetic data) and production mode (real serial connect
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 import serial
+import threading
 import time
 from typing import AsyncIterator, Literal
 
@@ -21,7 +23,7 @@ from ..serial_conn import (
     setup_serial,
 )
 from ..settings import AppSettings
-from .session_manager import record_point
+from .session_manager import record_point, set_device_reset_handler
 
 BroadcastMode = Literal["dev", "production"]
 
@@ -36,6 +38,8 @@ class DataBroadcaster:
         self._task: asyncio.Task | None = None
         self.serial_conn: serial.Serial | None = None
         self.previous_raw_data: dict[str, float] | None = None
+        self.serial_lock = threading.Lock()
+        self.logger = logging.getLogger("fluid_rower_monitor.serial")
 
     async def start(self) -> None:
         """Start the data stream task."""
@@ -85,15 +89,23 @@ class DataBroadcaster:
 
     async def _run_dev_stream(self) -> None:
         """Synthetic data generator for development."""
+        total_distance = 0.0
+        total_duration = 0.0
         while True:
+            stroke_duration = round(random.uniform(1.8, 2.5), 2)
+            stroke_distance = round(random.uniform(8.5, 10.5), 2)
+            total_duration += stroke_duration
+            total_distance += stroke_distance
             point = RowingDataPoint(
-                stroke_duration_secs=round(random.uniform(1.8, 2.5), 2),
-                stroke_distance_m=round(random.uniform(8.5, 10.5), 2),
+                stroke_duration_secs=stroke_duration,
+                stroke_distance_m=stroke_distance,
                 time_500m_secs=random.randint(110, 160),
                 strokes_per_min=random.randint(18, 30),
                 power_watts=random.randint(100, 300),
                 calories_per_hour=random.randint(500, 900),
                 resistance_level=random.randint(6, 12),
+                cumulative_distance_m=round(total_distance, 2),
+                cumulative_duration_secs=round(total_duration, 2),
             )
             await self._publish(point)
             await asyncio.sleep(2.0)  # Simulate stroke interval
@@ -110,9 +122,19 @@ class DataBroadcaster:
                 print("Failed to connect to rower device")
                 return
 
-            if not reset_device_session(self.serial_conn):
-                print("Failed to reset device session")
-                return
+            def _reset_handler() -> None:
+                if not self.serial_conn:
+                    raise RuntimeError("Serial connection not available")
+                with self.serial_lock:
+                    if not reset_device_session(self.serial_conn):
+                        raise RuntimeError("Failed to reset device session")
+                # Reset baseline so next stroke starts fresh
+                self.previous_raw_data = {
+                    "cumulative_distance_m": 0.0,
+                    "cumulative_duration_secs": 0.0,
+                }
+
+            set_device_reset_handler(_reset_handler)
 
             print("Production streaming started")
             self.previous_raw_data = None
@@ -123,29 +145,35 @@ class DataBroadcaster:
                     response = await loop.run_in_executor(None, self._read_serial_blocking)
 
                     if response and response.startswith("A"):
+                        if self.logger.isEnabledFor(logging.DEBUG):
+                            self.logger.debug("Serial raw: %r", response)
                         raw_data = decode_rowing_data(response)
-                        if raw_data and self.previous_raw_data:
-                            stroke_distance = (
-                                raw_data.cumulative_distance_m
-                                - self.previous_raw_data["cumulative_distance_m"]
-                            )
-                            stroke_duration = (
-                                raw_data.cumulative_duration_secs
-                                - self.previous_raw_data["cumulative_duration_secs"]
-                            )
-
-                            point = RowingDataPoint(
-                                stroke_distance_m=stroke_distance,
-                                stroke_duration_secs=stroke_duration,
-                                time_500m_secs=raw_data.time_500m_secs,
-                                strokes_per_min=raw_data.strokes_per_min,
-                                power_watts=raw_data.power_watts,
-                                calories_per_hour=raw_data.calories_per_hour,
-                                resistance_level=raw_data.resistance_level,
-                            )
-                            await self._publish(point)
-
+                        if raw_data and self.logger.isEnabledFor(logging.DEBUG):
+                            self.logger.debug("Decoded: %s", raw_data)
                         if raw_data:
+                            baseline = self.previous_raw_data or {
+                                "cumulative_distance_m": 0.0,
+                                "cumulative_duration_secs": 0.0,
+                            }
+                            stroke_distance = raw_data.cumulative_distance_m - baseline["cumulative_distance_m"]
+                            stroke_duration = raw_data.cumulative_duration_secs - baseline["cumulative_duration_secs"]
+
+                            if stroke_distance > 0 or stroke_duration > 0:
+                                point = RowingDataPoint(
+                                    stroke_distance_m=stroke_distance,
+                                    stroke_duration_secs=stroke_duration,
+                                    time_500m_secs=raw_data.time_500m_secs,
+                                    strokes_per_min=raw_data.strokes_per_min,
+                                    power_watts=raw_data.power_watts,
+                                    calories_per_hour=raw_data.calories_per_hour,
+                                    resistance_level=raw_data.resistance_level,
+                                    cumulative_distance_m=raw_data.cumulative_distance_m,
+                                    cumulative_duration_secs=raw_data.cumulative_duration_secs,
+                                )
+                                if self.logger.isEnabledFor(logging.DEBUG):
+                                    self.logger.debug("Point: %s", point)
+                                await self._publish(point)
+
                             self.previous_raw_data = {
                                 "cumulative_distance_m": raw_data.cumulative_distance_m,
                                 "cumulative_duration_secs": raw_data.cumulative_duration_secs,
@@ -176,8 +204,9 @@ class DataBroadcaster:
             return None
         start_time = time.time()
         while True:
-            if self.serial_conn.in_waiting:
-                return self.serial_conn.readline().decode("utf-8", errors="ignore").strip()
+            with self.serial_lock:
+                if self.serial_conn.in_waiting:
+                    return self.serial_conn.readline().decode("utf-8", errors="ignore").strip()
             if (time.time() - start_time) > self.settings.serial.timeout_secs:
                 return None
             time.sleep(0.01)

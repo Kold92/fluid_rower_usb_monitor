@@ -48,7 +48,10 @@ class UIPreferences(BaseModel):
 
     x_axis_type: Literal["samples", "time", "distance"] = Field(
         default="samples",
-        description="X-axis display mode for charts: samples (stroke number), time (elapsed seconds), distance (cumulative meters)"
+        description=(
+            "X-axis display mode for charts: samples (stroke number), time (elapsed seconds), "
+            "distance (cumulative meters)"
+        ),
     )
 
 
@@ -75,6 +78,8 @@ class ActiveSession(BaseModel):
 class LiveSample(BaseModel):
     stroke_duration_secs: float
     stroke_distance_m: float
+    cumulative_duration_secs: float | None = None
+    cumulative_distance_m: float | None = None
     time_500m_secs: int
     strokes_per_min: int
     power_watts: int

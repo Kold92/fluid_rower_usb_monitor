@@ -191,6 +191,8 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
                             power_watts=decoded.power_watts,
                             calories_per_hour=decoded.calories_per_hour,
                             resistance_level=decoded.resistance_level,
+                            cumulative_distance_m=decoded.cumulative_distance_m,
+                            cumulative_duration_secs=decoded.cumulative_duration_secs,
                         )
                         session.add_point(point)
 

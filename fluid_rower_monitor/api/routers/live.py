@@ -54,9 +54,7 @@ async def live_stream(ws: WebSocket):
                     start=active_session.session_start,
                     is_active=True,
                 )
-                await ws.send_text(
-                    json.dumps({"type": "session", "data": session_msg.model_dump(mode="json")})
-                )
+                await ws.send_text(json.dumps({"type": "session", "data": session_msg.model_dump(mode="json")}))
 
             # Send sample
             sample = LiveSample(**asdict(point))
@@ -64,8 +62,15 @@ async def live_stream(ws: WebSocket):
 
             # Update stats
             stroke_count += 1
-            total_distance += point.stroke_distance_m
-            total_duration += point.stroke_duration_secs
+            if point.cumulative_distance_m is not None:
+                total_distance = point.cumulative_distance_m
+            else:
+                total_distance += point.stroke_distance_m
+
+            if point.cumulative_duration_secs is not None:
+                total_duration = point.cumulative_duration_secs
+            else:
+                total_duration += point.stroke_duration_secs
             sum_watts += point.power_watts
             max_watts = max(max_watts, point.power_watts)
             min_watts = min(min_watts, point.power_watts)

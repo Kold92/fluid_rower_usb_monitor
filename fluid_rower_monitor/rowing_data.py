@@ -60,6 +60,8 @@ class RowingDataPoint:
     power_watts: int  # Power output for this stroke
     calories_per_hour: int  # Current calorie burn rate
     resistance_level: int  # Current resistance level
+    cumulative_distance_m: float | None = None  # Total distance since session start
+    cumulative_duration_secs: float | None = None  # Total duration since session start
 
 
 @dataclass
@@ -132,6 +134,9 @@ class RowingSession:
 
         # Convert dataclass to dict, then to DataFrame
         data_dicts = [asdict(p) for p in self.data_points]
+        for d in data_dicts:
+            d.pop("cumulative_distance_m", None)
+            d.pop("cumulative_duration_secs", None)
         df = pd.DataFrame(data_dicts)
 
         # Convert to Arrow table and add schema version metadata
@@ -153,6 +158,9 @@ class RowingSession:
             return
 
         data_dicts = [asdict(p) for p in partial_points]
+        for d in data_dicts:
+            d.pop("cumulative_distance_m", None)
+            d.pop("cumulative_duration_secs", None)
         df_new = pd.DataFrame(data_dicts)
         table_new = pa.Table.from_pandas(df_new)
 

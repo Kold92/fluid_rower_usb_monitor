@@ -179,6 +179,10 @@
     }
 
     const disconnect = connectLiveStream({
+      onOpen: () => {
+        wsStatus = 'open';
+        wsError = '';
+      },
       onSample: (sample) => {
         latestSample = sample;
         strokeCount += 1;
@@ -208,6 +212,7 @@
       },
       onClose: () => {
         wsStatus = 'closed';
+        wsError = '';
       }
     });
 

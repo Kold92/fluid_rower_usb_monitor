@@ -44,13 +44,13 @@ class UISettings(BaseModel):
 
     x_axis_type: Literal["samples", "time", "distance"] = Field(
         default="samples",
-        description="X-axis display mode for charts: samples (stroke number), time (elapsed seconds), distance (cumulative meters)"
+        description=(
+            "X-axis display mode for charts: samples (stroke number), time (elapsed seconds), "
+            "distance (cumulative meters)"
+        ),
     )
     max_points: int = Field(
-        default=30,
-        ge=10,
-        le=500,
-        description="Number of data points to display in charts (10-500)"
+        default=30, ge=10, le=500, description="Number of data points to display in charts (10-500)"
     )
 
 

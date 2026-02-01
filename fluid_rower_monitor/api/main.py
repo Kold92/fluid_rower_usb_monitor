@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -9,13 +10,14 @@ from fastapi import FastAPI
 
 from .broadcaster import get_broadcaster, BroadcastMode
 from .middleware import add_cors
-from .routers import router as base_router
 from .routers.sessions import router as sessions_router
 from .routers.config import router as config_router
 from .routers.live import router as live_router
 
 
 def create_app(mode: BroadcastMode = "production") -> FastAPI:
+    logging.basicConfig(level=os.environ.get("FRM_LOGGING__LEVEL", "INFO"))
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         # Startup: start broadcaster
@@ -64,7 +66,8 @@ def run(host: Optional[str] = None, port: Optional[int] = None, dev: bool = Fals
     if dev:
         print("   💡 Using synthetic data (pass --no-dev for real device)")
 
-    uvicorn.run("fluid_rower_monitor.api.main:app", host=host, port=port, reload=False)
+    app_instance = create_app(mode=mode)
+    uvicorn.run(app_instance, host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":  # pragma: no cover
@@ -72,6 +75,11 @@ if __name__ == "__main__":  # pragma: no cover
     parser.add_argument("--host", default=None, help="Host to bind to (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=None, help="Port to bind to (default: 8000)")
     parser.add_argument("--dev", action="store_true", help="Use synthetic data (dev mode)")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
+
+    if args.debug:
+        os.environ["FRM_LOGGING__LEVEL"] = "DEBUG"
+        logging.getLogger().setLevel(logging.DEBUG)
 
     run(host=args.host, port=args.port, dev=args.dev)
