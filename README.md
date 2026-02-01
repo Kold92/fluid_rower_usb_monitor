@@ -4,6 +4,8 @@ A Python application to monitor and analyze rowing sessions from a Fluid Rower d
 
 ## Features
 
+- **Web Dashboard**: Real-time UI with live charts (power, stroke rate, split time)
+- **API + WebSocket**: FastAPI backend for sessions, config, and live streaming
 - **Real-time Monitoring**: Live tracking of rowing metrics (distance, power, pace, SPM)
 - **Connection Resilience**: Automatic reconnection with data protection during disconnects
 - **Data Protection**: Periodic auto-save every 60 seconds or 10 strokes
@@ -39,6 +41,23 @@ cp config.example.yaml config.yaml
 uv run python -m fluid_rower_monitor.serial_conn
 ```
 
+### Web Dashboard (API + UI)
+
+```bash
+# Start the API (production mode by default)
+uv run fluid-rower-monitor-api
+
+# Or use synthetic data
+uv run fluid-rower-monitor-api --dev
+
+# Start the frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Open the UI at the printed dev server URL (usually http://localhost:5173).
+
 ## Documentation
 
 - **[Setup Guide](docs/SETUP.md)** - Installation and first connection
@@ -52,19 +71,22 @@ uv run python -m fluid_rower_monitor.serial_conn
 ```
 fluid_rower_monitor/
 ├── __init__.py           # Package exports
+├── api/                  # FastAPI backend (REST + WebSocket)
 ├── columns.py            # Column name constants
 ├── rowing_data.py        # Data models and storage
 ├── rowing_analyzer.py    # Session analysis and comparison
 ├── serial_conn.py        # Serial communication and session loop
 └── settings.py           # Configuration management
-tests/                    # Comprehensive test suite (93 tests)
+frontend/                 # SvelteKit UI
+tests/                    # Comprehensive test suite
 docs/                     # User and developer documentation
 ```
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.12+
 - Serial connection to Fluid Rower device
+- Node.js 18+ (for running the frontend)
 
 ## Key Dependencies
 
@@ -130,6 +152,9 @@ reconnect:
   backoff_secs: 0.5
   flush_interval_secs: 60.0
   flush_after_strokes: 10
+ui:
+  x_axis_type: samples
+  max_points: 30
 ```
 
 ## Analyzing Session Data

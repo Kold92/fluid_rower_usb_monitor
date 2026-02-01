@@ -17,7 +17,8 @@ This document outlines the process for releasing new versions of Fluid Rower Mon
 - [ ] Update ROADMAP.md to reflect completed features
 - [ ] Add entry to CHANGELOG.md (if exists, or create one)
 - [ ] Update README.md if new features warrant it
-- [ ] Check that docs/ are up to date with new features
+- [ ] Check that docs/ are up to date with new features (USAGE, SETUP, CONFIGURATION)
+- [ ] If UI or API changed, update screenshots/examples and run `npm run build` in frontend/
 
 ### 4. Schema Changes (if applicable)
 - [ ] If data format changed, update SCHEMA_VERSION in rowing_data.py

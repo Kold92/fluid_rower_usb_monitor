@@ -17,7 +17,7 @@ The Fluid Rower Monitor is designed with clear separation between business logic
 ```
 ┌─────────────────────────────────────────────────────┐
 │                  Interface Layer                     │
-│  (serial_conn.py - CLI, future: web/desktop UI)     │
+│  (serial_conn.py CLI, FastAPI API, SvelteKit UI)    │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
@@ -436,7 +436,7 @@ active_duration = total_duration - total_pause_secs
 - **Line Length:** 120 characters
 - **Formatter:** Black
 - **Linter:** Flake8 (ignore E203, W503)
-- **Type Hints:** Use throughout; support Python 3.8+
+- **Type Hints:** Use throughout; support Python 3.12+
 
 ### Development Workflow
 

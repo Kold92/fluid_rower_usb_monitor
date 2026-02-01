@@ -1,5 +1,54 @@
 # Usage Guide
 
+## Web Dashboard (Recommended)
+
+The web UI provides real-time charts, live stats, and session controls.
+
+### 1. Start the API
+
+```bash
+# Production mode (real device)
+uv run fluid-rower-monitor-api
+
+# Dev mode (synthetic data)
+uv run fluid-rower-monitor-api --dev
+```
+
+Optional debug logging:
+
+```bash
+uv run fluid-rower-monitor-api --debug
+```
+
+### 2. Start the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the UI at the printed URL (typically http://localhost:5173). The dashboard shows:
+
+- Live charts for power, stroke rate, and split time
+- Total distance, duration, average split time, and calories
+- Session start/stop controls
+
+UI preferences (x-axis mode and history length) are stored in `config.yaml` under `ui`.
+
+## API Endpoints
+
+When the API is running, interactive docs are available at http://localhost:8000/docs.
+
+Key endpoints:
+
+- GET /api/sessions
+- POST /api/sessions/start
+- POST /api/sessions/stop
+- GET /api/config
+- PUT /api/config
+- WebSocket /ws/live
+
 ## Recording a Session
 
 ### Starting a Session

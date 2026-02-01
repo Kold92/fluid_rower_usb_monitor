@@ -13,3 +13,7 @@ reconnect:
   backoff_secs: 0.5
   flush_interval_secs: 60.0
   flush_after_strokes: 10
+
+ui:
+  x_axis_type: samples
+  max_points: 30

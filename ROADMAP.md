@@ -5,6 +5,8 @@
 - ✅ Real-time session recording
 - ✅ Per-stroke data storage (parquet format)
 - ✅ Live statistics display
+- ✅ FastAPI backend (REST + WebSocket)
+- ✅ Web dashboard with live charts
 - ✅ Session analysis and comparison
 - ✅ Multi-session aggregation
 - ✅ Basic README and project structure
@@ -77,14 +79,14 @@
 
 ## Phase 2: Minimal Viable UI (Priority: High)
 ### Core UI Features
-- [ ] Setup/Configuration screen
-- [ ] Start/Stop rowing session buttons
-- [ ] Live data display during rowing:
+- [ ] Setup/Configuration screen (UI preferences only today)
+- [x] Start/Stop rowing session buttons
+- [x] Live data display during rowing:
   - Current stroke data (distance, duration, watts, pace, SPM)
   - Total time elapsed
   - Total distance rowed
 - [ ] Session summary on finish
-- [ ] Clean separation between UI and business logic
+- [x] Clean separation between UI and business logic
 
 ### Offline Mode
 - [ ] Application can start without device connection
@@ -95,8 +97,9 @@
 
 ## Phase 3: Graphs & Visualization (Priority: High)
 ### Data Visualization
-- [ ] Real-time power graph during session
-- [ ] Real-time 500m pace visualization
+- [x] Real-time power graph during session
+- [x] Real-time 500m pace visualization
+- [x] Real-time stroke-rate visualization
 - [ ] Session summary: Power curve graph
 - [ ] Session summary: Distance vs time graph
 - [ ] Session summary: Pace distribution histogram
@@ -179,8 +182,8 @@
 ## Tech Stack
 - **Testing**: pytest, pytest-cov, tox, flake8
 - **Data Storage**: pandas, parquet (pyarrow)
-- **Graphing**: Matplotlib or Plotly
-- **UI**: TBD (Web/CLI/Desktop) - decided in Phase 2
+- **Graphing**: Chart.js (frontend)
+- **UI**: SvelteKit + Tailwind + Chart.js
 - **CI/CD**: GitHub Actions
 
 ---

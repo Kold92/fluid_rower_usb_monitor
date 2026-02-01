@@ -2,9 +2,10 @@
 
 ## Prerequisites
 
-- Python 3.8 or later
+- Python 3.12 or later
 - A Fluid Rower with USB serial connection
 - Linux, macOS, or Windows operating system
+- Node.js 18+ (for the web UI)
 
 ## Installation
 
@@ -74,6 +75,9 @@ reconnect:
   backoff_secs: 0.5
   flush_interval_secs: 60.0
   flush_after_strokes: 10
+ui:
+  x_axis_type: samples
+  max_points: 30
 ```
 
 ## First Connection Test
@@ -84,6 +88,23 @@ reconnect:
 uv run python -m fluid_rower_monitor.serial_conn
 # Or if installed: fluid-rower-monitor
 ```
+
+### Optional: Start the API + Web UI
+
+```bash
+# API (production mode by default)
+uv run fluid-rower-monitor-api
+
+# Dev mode with synthetic data
+uv run fluid-rower-monitor-api --dev
+
+# Frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Open the UI at the printed dev server URL (usually http://localhost:5173).
 
 ### 2. Expected Output
 

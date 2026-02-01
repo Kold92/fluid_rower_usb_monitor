@@ -32,6 +32,10 @@ reconnect:
   backoff_secs: 0.5
   flush_interval_secs: 60.0
   flush_after_strokes: 10
+
+ui:
+  x_axis_type: samples
+  max_points: 30
 ```
 
 ## Configuration Sections
@@ -274,6 +278,47 @@ export FRM_RECONNECT__FLUSH_AFTER_STROKES=5
 
 ---
 
+### `ui` - Web Dashboard Preferences
+
+Controls the live chart configuration in the web UI.
+
+#### `ui.x_axis_type`
+
+**Type:** `string`  
+**Default:** `samples`  
+**Description:** X-axis display mode for charts.
+
+**Valid Values:** `samples`, `time`, `distance`
+
+```yaml
+ui:
+  x_axis_type: time
+```
+
+**Environment Variable:**
+```bash
+export FRM_UI__X_AXIS_TYPE=time
+```
+
+#### `ui.max_points`
+
+**Type:** `integer`  
+**Default:** `30`  
+**Range:** `10-500`  
+**Description:** Number of data points to keep in each live chart.
+
+```yaml
+ui:
+  max_points: 50
+```
+
+**Environment Variable:**
+```bash
+export FRM_UI__MAX_POINTS=50
+```
+
+---
+
 ## Environment Variable Override System
 
 All configuration settings can be overridden via environment variables.
@@ -303,6 +348,10 @@ export FRM_RECONNECT__MAX_ATTEMPTS=10
 export FRM_RECONNECT__BACKOFF_SECS=1.0
 export FRM_RECONNECT__FLUSH_INTERVAL_SECS=30.0
 export FRM_RECONNECT__FLUSH_AFTER_STROKES=5
+
+# UI settings
+export FRM_UI__X_AXIS_TYPE=time
+export FRM_UI__MAX_POINTS=50
 ```
 
 ### Priority Order
