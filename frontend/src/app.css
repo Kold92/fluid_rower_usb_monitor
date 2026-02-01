@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    
+    /* Semantic color palette */
+    --color-primary: 14 165 233;        /* Sky blue - main brand */
+    --color-primary-dark: 3 105 161;    /* Darker blue */
+    --color-secondary: 20 184 166;      /* Teal - secondary actions */
+    --color-accent: 251 146 60;         /* Orange - highlights */
+    --color-danger: 239 68 68;          /* Red - power/intensity */
+    --color-success: 34 197 94;         /* Green - success/distance */
+    --color-warning: 234 179 8;         /* Yellow - warnings */
+    
+    /* Background & Surface */
+    --color-bg-base: 11 16 33;          /* Deep navy background */
+    --color-bg-elevated: 15 23 42;      /* Slate 900 - elevated surfaces */
+    --color-bg-card: 30 41 59;          /* Slate 800 - cards */
+    --color-border: 51 65 85;           /* Slate 700 - borders */
+    
+    /* Text */
+    --color-text-primary: 248 250 252;  /* Slate 50 - primary text */
+    --color-text-secondary: 148 163 184; /* Slate 400 - secondary text */
+    --color-text-muted: 100 116 139;    /* Slate 500 - muted text */
+    
+    /* Chart colors */
+    --color-chart-power: var(--color-danger);
+    --color-chart-spm: var(--color-primary);
+    --color-chart-distance: var(--color-success);
+  }
+
+  html, body {
+    background-color: rgb(var(--color-bg-base));
+    color: rgb(var(--color-text-primary));
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+a {
+  color: rgb(var(--color-primary));
+}
+
+a:hover {
+  color: rgb(var(--color-primary-dark));
+}
+
+.btn {
+  @apply px-3 py-2 rounded-md font-semibold shadow transition;
+  background-color: rgb(var(--color-primary));
+  color: rgb(var(--color-text-primary));
+}
+
+.btn:hover {
+  background-color: rgb(var(--color-primary-dark));
+}
+
+.card {
+  @apply rounded-xl p-4 shadow;
+  background-color: rgb(var(--color-bg-card) / 0.6);
+  border: 1px solid rgb(var(--color-border));
+}

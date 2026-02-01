@@ -31,6 +31,8 @@ dependencies = [
     "pydantic>=2.6.0",
     "pydantic-settings>=2.1.0",
     "pyyaml>=6.0.1",
+    "fastapi>=0.103,<1.0",
+    "uvicorn[standard]>=0.23,<1.0",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +52,7 @@ Issues = "https://github.com/kold/fluid_rower_usb_monitor/issues"
 
 [project.scripts]
 fluid-rower-monitor = "fluid_rower_monitor.serial_conn:main"
+fluid-rower-monitor-api = "fluid_rower_monitor.api.main:run"
 
 # Tool configurations
 [tool.black]

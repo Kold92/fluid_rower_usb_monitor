@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError
@@ -39,6 +39,21 @@ class ReconnectSettings(BaseModel):
     flush_after_strokes: int = Field(10, ge=1, description="Flush session after N strokes")
 
 
+class UISettings(BaseModel):
+    """UI configuration preferences."""
+
+    x_axis_type: Literal["samples", "time", "distance"] = Field(
+        default="samples",
+        description="X-axis display mode for charts: samples (stroke number), time (elapsed seconds), distance (cumulative meters)"
+    )
+    max_points: int = Field(
+        default=30,
+        ge=10,
+        le=500,
+        description="Number of data points to display in charts (10-500)"
+    )
+
+
 class AppSettings(BaseSettings):
     """Validated application settings with YAML + env support."""
 
@@ -47,6 +62,7 @@ class AppSettings(BaseSettings):
     data: DataSettings = DataSettings()
     logging: LoggingSettings = LoggingSettings()
     reconnect: ReconnectSettings = ReconnectSettings()
+    ui: UISettings = UISettings()
 
     model_config = SettingsConfigDict(
         env_prefix="FRM_",

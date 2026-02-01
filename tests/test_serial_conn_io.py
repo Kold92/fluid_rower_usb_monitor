@@ -8,7 +8,7 @@ from fluid_rower_monitor.serial_conn import (
     setup_serial,
     get_serial_response,
     connect_to_device,
-    reset_session,
+    reset_device_session,
     rowing_session,
     attempt_reconnect,
 )
@@ -169,7 +169,7 @@ class TestConnectToDevice:
 
 
 class TestResetSession:
-    """Tests for reset_session function."""
+    """Tests for reset_device_session function."""
 
     def test_reset_session_success(self):
         """Test successful session reset."""
@@ -178,7 +178,7 @@ class TestResetSession:
         with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
             mock_get.return_value = "R"
 
-            result = reset_session(mock_ser)
+            result = reset_device_session(mock_ser)
 
             assert result is True
             mock_ser.write.assert_called_once_with(b"R\n")
@@ -194,7 +194,7 @@ class TestResetSession:
             # Let's make it return None instead
             mock_get.return_value = None
 
-            result = reset_session(mock_ser)
+            result = reset_device_session(mock_ser)
 
             assert result is False
 
@@ -205,7 +205,7 @@ class TestResetSession:
         with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
             mock_get.side_effect = ["A5 00001 00010 002 19 022 129 0744 09", "R"]
 
-            result = reset_session(mock_ser)
+            result = reset_device_session(mock_ser)
 
             assert result is True
 
@@ -265,7 +265,7 @@ class TestRowingSession:
         """Test that rowing_session handles KeyboardInterrupt."""
         mock_ser = MagicMock()
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -278,7 +278,7 @@ class TestRowingSession:
         """Test that rowing_session handles failed reset."""
         mock_ser = MagicMock()
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = False
 
             # Should return early without raising
@@ -294,7 +294,7 @@ class TestRowingSession:
             "A5 00002 00020 002 19 022 129 0744 09",
         ]
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -315,7 +315,7 @@ class TestRowingSession:
             "A5 00001 00010 002 19 022 129 0744 09",  # Valid rowing
         ]
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -328,7 +328,7 @@ class TestRowingSession:
         """Test that rowing_session saves data on exit."""
         mock_ser = MagicMock()
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -349,7 +349,7 @@ class TestRowingSession:
             KeyboardInterrupt(),
         ]
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -367,7 +367,7 @@ class TestRowingSession:
             KeyboardInterrupt(),
         ]
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:
@@ -381,7 +381,7 @@ class TestRowingSession:
         """Test rowing_session message when no data is recorded."""
         mock_ser = MagicMock()
 
-        with patch("fluid_rower_monitor.serial_conn.reset_session") as mock_reset:
+        with patch("fluid_rower_monitor.serial_conn.reset_device_session") as mock_reset:
             mock_reset.return_value = True
 
             with patch("fluid_rower_monitor.serial_conn.get_serial_response") as mock_get:

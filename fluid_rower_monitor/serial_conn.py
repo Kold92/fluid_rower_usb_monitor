@@ -54,8 +54,8 @@ def connect_to_device(ser: serial.Serial) -> bool:
     return False
 
 
-def reset_session(ser: serial.Serial) -> bool:
-    """Sends reset command to the device."""
+def reset_device_session(ser: serial.Serial) -> bool:
+    """Sends reset command to the device (rower-side session)."""
     ser.write(b"R\n")
     time.sleep(0.5)
     while True:
@@ -131,7 +131,7 @@ def rowing_session(ser: serial.Serial, settings: AppSettings | None = None):
 
     settings = settings or AppSettings()
 
-    if not reset_session(ser):
+    if not reset_device_session(ser):
         print("Failed to reset session.")
         return
 
