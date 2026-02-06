@@ -99,3 +99,7 @@ class LiveStats(BaseModel):
     max_strokes_per_min: int
     total_calories: float
     avg_resistance: float
+    serial_connected: bool = Field(False, description="Whether the serial device is connected")
+    stream_mode: Literal["dev", "production"] = Field(
+        "production", description="Streaming mode (dev uses synthetic data)"
+    )

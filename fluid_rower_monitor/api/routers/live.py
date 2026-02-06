@@ -93,6 +93,8 @@ async def live_stream(ws: WebSocket):
                 max_strokes_per_min=max_spm,
                 total_calories=round(sum_calories / stroke_count * total_duration / 3600, 1),
                 avg_resistance=round(sum_resistance / stroke_count, 1),
+                serial_connected=broadcaster.is_serial_connected(),
+                stream_mode=broadcaster.mode,
             )
             await ws.send_text(json.dumps({"type": "stats", "data": stats.model_dump()}))
 

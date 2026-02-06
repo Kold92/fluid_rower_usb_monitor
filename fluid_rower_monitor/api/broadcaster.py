@@ -66,6 +66,12 @@ class DataBroadcaster:
         finally:
             self.subscribers.remove(queue)
 
+    def is_serial_connected(self) -> bool:
+        """Return True if the serial connection is open (production mode only)."""
+        if self.mode != "production":
+            return False
+        return bool(self.serial_conn and getattr(self.serial_conn, "is_open", False))
+
     async def _publish(self, point: RowingDataPoint) -> None:
         """Publish a data point to all subscribers."""
         record_point(point)

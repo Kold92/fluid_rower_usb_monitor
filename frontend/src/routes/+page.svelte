@@ -17,6 +17,7 @@
   let strokeCount = 0;
   let wsStatus: 'connecting' | 'open' | 'closed' = 'connecting';
   let wsError = '';
+  let serialStatus: 'unknown' | 'connected' | 'disconnected' | 'dev' = 'unknown';
 
   let powerChart: LiveChart;
   let spmChart: LiveChart;
@@ -202,6 +203,11 @@
         latestStats = stats;
         cumulativeTimeArray.push(stats.total_duration_secs);
         cumulativeDistanceArray.push(stats.total_distance_m);
+        if (stats.stream_mode === 'dev') {
+          serialStatus = 'dev';
+        } else {
+          serialStatus = stats.serial_connected ? 'connected' : 'disconnected';
+        }
       },
       onSession: (session) => {
         activeSession = session;
@@ -235,6 +241,15 @@
         <span class="px-3 py-1 rounded-full border border-border bg-bg-card">API: http://localhost:8000</span>
         <span class="px-3 py-1 rounded-full" class:bg-success={wsStatus === 'open'} class:bg-warning={wsStatus === 'connecting'} class:bg-danger={wsStatus === 'closed'}>
           WS: {wsStatus}
+        </span>
+        <span
+          class="px-3 py-1 rounded-full"
+          class:bg-success={serialStatus === 'connected'}
+          class:bg-warning={serialStatus === 'dev'}
+          class:bg-danger={serialStatus === 'disconnected'}
+          class:bg-bg-card={serialStatus === 'unknown'}
+        >
+          Serial: {serialStatus}
         </span>
       </div>
     </header>
