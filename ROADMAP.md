@@ -19,7 +19,7 @@
 - ✅ tox automation for test environments
 - ✅ flake8 linting configuration
 - ✅ pytest-cov for coverage reporting
-- [ ] GitHub Actions CI/CD pipeline (deferred)
+- ⏸️ GitHub Actions CI/CD pipeline (deferred)
 - ✅ Initial unit tests for decoder
 - ✅ Unit tests for data models
 - ✅ Unit tests for analyzer functions
@@ -29,15 +29,15 @@
 - ✅ Configuration file (YAML with pydantic validation)
 - ✅ Configuration schema validation
 - ✅ Environment variable overrides (FRM_ prefix)
-- [ ] Auto-discover serial port (deferred)
-- [ ] Multi-user support (user profiles) (deferred)
-- [ ] Default config generation on first run (deferred)
+- ⏸️ Auto-discover serial port (deferred)
+- ⏸️ Multi-user support (user profiles) (deferred)
+- ⏸️ Default config generation on first run (deferred)
 
 ### Versioning & Data Durability
-- [ ] Application version numbering (semantic versioning) (deferred)
-- [ ] Schema version tracking in saved data (deferred)
-- [ ] Data migration framework for breaking changes (deferred)
-- [ ] Migration script examples and documentation (deferred)
+- ⏸️ Application version numbering (semantic versioning) (deferred)
+- ✅ Schema version tracking in saved data
+- ✅ Data migration framework for breaking changes
+- ✅ Migration script examples and documentation
 
 ---
 

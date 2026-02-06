@@ -4,10 +4,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
+from dataclasses import asdict
+
 from fastapi import APIRouter, HTTPException, status
 
 from ..models import ActiveSession, SessionSummary, SessionDetail
 from ..session_manager import DeviceResetError, get_active_session, start_session, stop_session
+from ...rowing_analyzer import RowingAnalyzer
 from ...rowing_data import RowingSession  # type: ignore
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -20,6 +23,16 @@ def _parse_start_from_filename(path: Path) -> datetime | None:
         return datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
     except Exception:
         return None
+
+
+def _to_plain_value(value: Any) -> Any:
+    """Convert numpy scalar types to plain Python values for JSON serialization."""
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:
+            return value
+    return value
 
 
 @router.get("/", response_model=List[SessionSummary])
@@ -76,9 +89,13 @@ def get_session(session_id: str) -> SessionDetail:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
 
     fp = match[0]
-    # For now, compute basic stats by reading the file; later we can cache
+    # Compute session stats (total distance, pace, power, etc.)
     try:
-        stats = RowingSession.load_session(fp).describe().to_dict()
+        session_stats = RowingAnalyzer.get_historical_stats(fp)
+        if session_stats:
+            stats = {key: _to_plain_value(val) for key, val in asdict(session_stats).items()}
+        else:
+            stats = {}
     except Exception:
         stats = {}
 
